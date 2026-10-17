@@ -93,6 +93,7 @@ ul.sub{margin:0;padding-left:1.2em}
 .list .dragging{background:var(--me);box-shadow:0 4px 14px rgba(58,42,28,.25)}
 .chip{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:800;padding:3px 10px;border-radius:99px;background:#ffefc9;color:#7a4b00;white-space:nowrap}
 .chip.off{background:var(--primary);color:#fff}
+.chip.ok{background:#d8f5ea;color:#0d6b49}
 .chip.heat{background:#ffe0e3;color:#b3202b}
 .btn{font:inherit;font-weight:800;font-size:15px;min-height:46px;border:0;border-radius:999px;padding:10px 20px;background:var(--primary);color:#fff;cursor:pointer;text-align:center;box-shadow:0 4px 0 var(--primary-dark);transition:transform .08s,box-shadow .08s}
 .btn:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 var(--primary-dark)}
@@ -312,6 +313,12 @@ const callState = (rid, el, cur) => {
   const key = rid + ':' + el, called = !!S.called[key + ':' + cur];
   return { called, can: !called && (S.callOk[key] === cur || (!Object.keys(resOf(rid, el)).length && cur === S.order[rid][0])) };
 };
+// 申込の状態: 同じクラスには、非公式の競技会・体験会なら複数頭で申し込める（公式は1人1頭、セミナーは犬なし）。全頭申し込むと「申し込み済み」
+const multiDog = r => r.cls !== 'セミナー' && !r.official;
+const applyState = r => {
+  const names = entriesOf(r.id).filter(e => e.handler === ME.handler).map(e => e.dog);
+  return { names, free: r.cls === 'セミナー' ? [] : ME.dogs.filter(d => !names.includes(d[0])), full: names.length > 0 && (!multiDog(r) || ME.dogs.every(d => names.includes(d[0]))) };
+};
 const nextIndex = (rid, el) => S.order[rid].findIndex(id => !resOf(rid, el)[id]);
 // 競技会の状態: before=開始前 / live=進行中 / after=終了。記録が1件でも入ると進行中、全頭・全課目が揃うと終了
 function roomPhase(r) {
@@ -380,11 +387,11 @@ function evList() { // 探す: クラスごとに1枚のカード。カード全
   const q = S.q.trim().toLowerCase(), cards = [];
   S.events.filter(e => visible(e) && (S.filter === 'すべて' || e.type === S.filter) && (S.region === 'すべて' || e.pref === S.region || regionOf(e.pref) === S.region)
     && (!q || `${e.title} ${e.place} ${person(e.hostId).name}`.toLowerCase().includes(q))).sort((a, b) => a.date.localeCompare(b.date))
-    .forEach(e => roomsOf(e.id).filter(r => S.cls === 'すべて' || r.cls === S.cls).forEach(r => cards.push(`<div class="ecard">${cardBg(e)}<span class="fade"></span>
-      <span class="tl gpill">${entriesOf(r.id).length}/${r.cap}組</span>
+    .forEach(e => roomsOf(e.id).filter(r => S.cls === 'すべて' || r.cls === S.cls).forEach(r => { const ap = applyState(r); cards.push(`<div class="ecard">${cardBg(e)}<span class="fade"></span>
+      <span class="tl gpill">${ap.names.length ? (ap.full ? '✓ 申込済み・' : '✓ 一部申込済み・') : ''}${entriesOf(r.id).length}/${r.cap}組</span>
       <span class="tr gpill">${e.priv ? ic('lock', 12) : ''}${esc(r.cls)}</span>
       <button class="cover" data-a="open" data-v="${esc(e.id)}" data-d="${esc(r.id)}" aria-label="${esc(e.title)}を開く"></button>
-      <span class="info"><strong>${esc(e.title)}</strong><span class="num">${esc(e.date)}・${yen(r.fee)}・${esc(e.place)}</span>${hostChip(e.hostId)}</span></div>`)));
+      <span class="info"><strong>${esc(e.title)}</strong><span class="num">${esc(e.date)}・${yen(r.fee)}・${esc(e.place)}</span>${hostChip(e.hostId)}</span></div>`); }));
   return cards.join('') || empty('条件に合う大会が見つかりませんでした。');
 }
 const resultTable = res => {
@@ -496,37 +503,40 @@ const V = {
       ${S.isHost && e.hostId === ME.hid ? `<div class="row" style="margin-top:10px"><button class="btn ghost sm" data-a="manage" data-v="${esc(rs[0].id)}">ホストとして管理する</button></div>` : ''}
       <h2>${lesson ? 'お申し込み' : 'クラスをえらんで申し込む'}</h2>
       <div class="stack">${[...rs].sort((a, b) => (b.id === S.roomId) - (a.id === S.roomId)).map(r => {
-        const n = entriesOf(r.id).length, full = n >= r.cap;
+        const n = entriesOf(r.id).length, full = n >= r.cap, ap = applyState(r), sem = r.cls === 'セミナー';
         return `<div class="card"><div class="row"><strong class="grow" style="font-size:18px">${esc(r.cls)}</strong>${r.id === S.roomId && rs.length > 1 ? '<span class="chip">選んだクラス</span>' : ''}<span class="chip ${isLesson(r) || !r.official ? '' : 'off'}">${isLesson(r) ? 'イベント' : r.official ? '公式' : '非公式'}</span></div>
           <div class="sub">${esc(elLine(r))}</div>
-          <div class="row"><span class="grow">定員 <span class="num">${n}/${r.cap}</span>組</span><strong class="num">${yen(r.fee)}</strong></div>
-          ${isLesson(r) ? '' : r.orderFixed ? `<button class="btn ghost sm" data-a="entrants" data-v="${esc(r.id)}">参加者を見る（${n}組）</button>` : '<div class="sub">参加者は、出走順が確定すると見られます。</div>'}
-          <button class="btn" data-a="apply" data-v="${esc(r.id)}" ${full ? 'disabled' : ''}>${full ? '満員です' : isLesson(r) ? `この${r.cls === 'セミナー' ? 'セミナー' : '体験会'}に申し込む` : 'このクラスに申し込む'}</button></div>`; }).join('')}</div>
+          <div class="row"><span class="grow">定員 <span class="num">${n}/${r.cap}</span>組</span><strong class="num">${yen(r.fee)}${sem ? '' : '／頭'}</strong></div>
+          ${ap.names.length ? `<div class="row"><span class="chip ok">✓ 申し込み済み</span><span class="sub">${ap.names.filter(Boolean).map(esc).join('・')}</span></div>` : ''}
+          <button class="btn" data-a="apply" data-v="${esc(r.id)}" ${ap.full || full ? 'disabled' : ''}>${ap.full ? '申し込み済み' : full ? '満員です' : ap.names.length ? '他の犬も申し込む' : isLesson(r) ? `この${sem ? 'セミナー' : '体験会'}に申し込む` : 'このクラスに申し込む'}</button></div>`; }).join('')}</div>
       <h2>${lesson ? '当日について' : '当日の流れ'}</h2>
-      <p class="sub">集合時間は${esc(e.meet || '未定')}です。${lesson ? '持ち物などの案内は、申込後に主催者から届きます。' : '出走順は主催者が確定すると、参加する大会の詳細で見られます。出番が近づくとアプリに通知が届きます。'}</p>`;
+      <p class="sub">集合時間は${esc(e.meet || '未定')}です。${lesson ? '持ち物などの案内は、申込後に主催者から届きます。' : '出走順や参加者は、申し込んだあと「イベント」の大会詳細で、主催者が確定すると見られます。出番が近づくとアプリに通知が届きます。'}</p>`;
   },
 
   // --- 申込の流れ（同意 → 支払い → 完了） ---
   flow(e, f) {
-    const r = room(f.roomId), L = isLesson(r), sem = r.cls === 'セミナー', freeDogs = ME.dogs.filter(d => !entriesOf(r.id).some(x => x.handler === ME.handler && x.dog === d[0])), card = c => `<div class="card" style="margin-top:14px">${c}</div>`;
-    const head = `${back('cancel', '', L ? 'イベントページへ' : '大会ページへ')}<h1>${esc(e.title)}</h1><p class="sub">${esc(r.cls)}・${sem ? '' : `${esc(f.dog)}（${esc(breedOf(f.dog))}）／`}${esc(ME.handler)}</p>
-      <div class="steps">${['同意', '支払い', '完了'].map((s, i) => `<span class="${i <= f.step ? 'on' : ''}">${i + 1}. ${s}</span>`).join('')}</div>`;
+    const r = room(f.roomId), L = isLesson(r), sem = r.cls === 'セミナー', ap = applyState(r), n = f.dogs ? f.dogs.length : 1, total = r.fee * n, card = c => `<div class="card" style="margin-top:14px">${c}</div>`;
+    const head = `${back('cancel', '', L ? 'イベントページへ' : '大会ページへ')}<h1>${esc(e.title)}</h1><p class="sub">${esc(r.cls)}・${f.dogs && !sem ? `${f.dogs.map(esc).join('・')}／` : ''}${esc(ME.handler)}</p>
+      <div class="steps">${['犬・同意', '支払い', '完了'].map((s, i) => `<span class="${i <= f.step ? 'on' : ''}">${i + 1}. ${s}</span>`).join('')}</div>`;
     if (f.step === 0) return head + card(`<strong>${L ? 'お申し込み内容の確認' : '参加にあたっての同意'}</strong>
+      ${sem ? '' : `<fieldset><legend>参加する犬${r.official ? '（公式競技会は1頭だけ）' : '（複数えらべます）'}</legend>
+        ${ME.dogs.map(([nm, br]) => { const done = ap.names.includes(nm);
+          return `<div class="row"><label class="agree grow"><input type="checkbox" name="dg" value="${esc(nm)}" ${done ? 'disabled' : nm === ap.free[0]?.[0] ? 'checked' : ''}> <strong>${esc(nm)}</strong> <span class="sub">${esc(br)}</span></label>
+            ${done ? '<span class="chip ok">申込済み</span>' : L ? '' : `<label class="agree sub"><input type="checkbox" name="dh" value="${esc(nm)}"> ヒート中</label>`}</div>`; }).join('')}
+        <div class="sub" id="dogFee" style="margin-top:6px"></div></fieldset>`}
       ${L ? `<div class="sub num">${esc(e.date)}・${esc(e.place)}</div>
-        <ul class="sub">${sem ? '<li>日時・場所（オンラインの場合は参加方法）を確認しました</li>' : `<li>${esc(f.dog)}のワクチン接種と当日の体調に問題がないことを確認しました</li><li>主催者の指示に従います</li>`}<li>キャンセル・返金は主催者の規定に従います</li></ul>`
-      : `<ul class="sub"><li>大会のルールと主催者の指示に従います</li><li>ヒート中の犬は申し出て、出走順は最後になります</li>${r.official ? '<li>公式競技会は、1つの競技に出られるのはハンドラー1人につき犬1頭です</li>' : ''}<li>キャンセル・返金は主催者の規定に従います</li></ul>
-        <label class="agree"><input type="checkbox" id="heat"> 出場する犬は当日ヒート中の予定</label>`}
-      ${!sem && freeDogs.length > 1 ? `<label>出場する犬<select id="fdog">${freeDogs.map(([n, b]) => `<option value="${esc(n)}" ${n === f.dog ? 'selected' : ''}>${esc(n)}（${esc(b)}）</option>`).join('')}</select></label>` : ''}
+        <ul class="sub">${sem ? '<li>日時・場所（オンラインの場合は参加方法）を確認しました</li>' : '<li>参加する犬のワクチン接種と当日の体調に問題がないことを確認しました</li><li>主催者の指示に従います</li>'}<li>キャンセル・返金は主催者の規定に従います</li></ul>`
+      : `<ul class="sub"><li>大会のルールと主催者の指示に従います</li><li>ヒート中の犬は「ヒート中」にチェックを入れてください。出走順は最後になります</li>${r.official ? '<li>公式競技会は、1つの競技に出られるのはハンドラー1人につき犬1頭です</li>' : ''}<li>キャンセル・返金は主催者の規定に従います</li></ul>`}
       <label class="agree"><input type="checkbox" id="agree"> 上記に同意します</label>
       <p id="err" class="bad" hidden></p><button class="btn" data-a="agree">同意して支払いへ</button>`);
     if (f.step === 1) return head + card(`<strong>お支払い（ダミー）</strong>
-      <table class="money"><tr><td>参加費</td><td class="num">${yen(r.fee)}</td></tr>
-        <tr><td class="sub">うちアプリ手数料（決済込み${FEE_RATE * 100}％）</td><td class="num sub">${yen(fee(r.fee))}</td></tr>
-        <tr><td class="sub">主催者の受け取り</td><td class="num sub">${yen(r.fee - fee(r.fee))}</td></tr>
-        <tr class="total"><td>お支払い合計</td><td class="num">${yen(r.fee)}</td></tr></table>
+      <table class="money"><tr><td>参加費 ${yen(r.fee)}${sem ? '' : ` × ${n}頭`}</td><td class="num">${yen(total)}</td></tr>
+        <tr><td class="sub">うちアプリ手数料（決済込み${FEE_RATE * 100}％）</td><td class="num sub">${yen(fee(total))}</td></tr>
+        <tr><td class="sub">主催者の受け取り</td><td class="num sub">${yen(total - fee(total))}</td></tr>
+        <tr class="total"><td>お支払い合計</td><td class="num">${yen(total)}</td></tr></table>
       <p class="sub">手数料は参加費の内側から引かれ、参加者の負担は増えません。試作のためカード入力はなく、実際の請求もありません。</p>
-      <button class="btn" data-a="pay">${yen(r.fee)}を支払う（ダミー）</button>`);
-    return head + card(`<div class="row"><span>${dogFace(40)}</span><strong class="ok grow">${L ? 'お申し込みが完了しました！' : '参加が完了しました！'}</strong></div>
+      <button class="btn" data-a="pay">${yen(total)}を支払う（ダミー）</button>`);
+    return head + card(`<div class="row"><span>${dogFace(40)}</span><strong class="ok grow">${L ? 'お申し込みが完了しました！' : '参加が完了しました！'}${sem ? '' : `（${n}頭）`}</strong></div>
       ${L ? `<div class="sub num">${esc(e.date)}・${esc(e.place)}</div><p class="sub">持ち物や集合時間などのお知らせは、主催者からアプリに届きます。</p>`
           : '<p class="sub">出走順は主催者が確定すると、「イベント」の大会詳細に表示されます。競技が始まると、あと3頭と、次が出番のときに通知が届きます。</p>'}
       <button class="btn" data-a="go" data-v="myevents">イベントを見る</button>`);
@@ -645,18 +655,10 @@ const V = {
         : empty('まだ通知はありません。出走順の確定、呼び出し、結果の確定などをここでお知らせします。')}`;
   },
 
-  // --- 参加者の一覧とプロフィール ---
-  entrants() {
-    const r = room(S.entrantRoom), e = ev(r.eventId), top = back('go', S.entrantFrom || 'event');
-    if (isLesson(r) || !r.orderFixed) return `${top}<h1>参加者一覧</h1><p class="sub">参加者は、出走順が確定すると見られます。</p>`;
-    const ord = S.order[r.id];
-    return `${top}<h1>参加者一覧</h1><p class="sub">${esc(e.title)}・${esc(r.cls)}・<span class="num">${ord.length}/${r.cap}</span>組</p>
-      <div class="list">${ord.map(id => { const en = entry(id);
-        return `<button class="tap row ${en.handler === ME.handler ? 'me' : ''}" data-a="eprofile" data-v="${esc(id)}"><span class="grow"><strong>${esc(en.dog)}</strong> <span class="sub">${esc(en.breed)}</span><br><span class="sub">${esc(en.handler)}</span>${hb(en)}</span>${en.heat ? '<span class="chip heat">ヒート</span>' : ''}<span class="sub">›</span></button>`; }).join('')}</div>`;
-  },
+  // --- 参加者の情報（主催者だけ。主催者の詳細の表から開く） ---
   eprofile() { // 参加者（犬とハンドラー）の情報。連絡先やIDは、その大会のホストにだけ見える
     const en = entry(S.entryProfile), r = room(en.roomId), e = ev(r.eventId), m = meta(en), host = S.isHost && e.hostId === ME.hid, L = isLesson(r);
-    return `${back('go', S.eprofileBack || 'entrants')}<h1>${esc(en.dog || en.handler)}</h1>
+    return `${back('go', S.eprofileBack || 'rooms')}<h1>${esc(en.dog || en.handler)}</h1>
       <p class="sub">${en.dog ? `${esc(en.breed)}・${m.age}歳・ハンドラー ` : 'ハンドラー '}${esc(en.handler)}${hb(en)}</p>
       <div class="grid2">${stat('これまでの参加', m.count, '回')}${L ? '' : stat('この大会の出走順', S.order[r.id].indexOf(en.id) + 1, '番')}</div>
       <h2>${L ? 'このイベント' : 'この大会'}（${esc(e.title)}・${esc(r.cls)}）</h2>
@@ -791,32 +793,37 @@ const act = {
   open: (v, d) => { if (d) S.roomId = d; if (!S.seen.includes(v)) S.seen.push(v); S.eventId = v; S.flow = null; S.tab = 'search'; S.view = 'event'; },
   host: v => { S.profileOf = v; S.profileBack = S.view; S.view = 'profile'; },
   mydetail: v => { S.detailEntry = v; S.dtab = 'info'; S.view = 'detail'; },
-  entrants: v => { S.entrantRoom = v; S.entrantFrom = S.view; S.view = 'entrants'; },
   eprofile: v => { S.entryProfile = v; S.eprofileBack = S.view; S.view = 'eprofile'; },
   // 申込
   apply: v => {
-    const r = room(v), mine = entriesOf(v).filter(e => e.handler === ME.handler), multi = !r.official && !isLesson(r); // 多頭飼いは、非公式の競技会なら同じクラスに複数頭で出られる
-    if (mine.length && !multi) return toast('申込済みです', `${r.cls}にはすでに申し込んでいます${r.official ? '（公式競技会は1つの競技に1人1頭です）' : ''}`);
-    const free = ME.dogs.filter(d => !mine.some(e => e.dog === d[0]));
-    if (!free.length) return toast('申込済みです', 'すべての犬が、このクラスに申し込み済みです');
-    S.flow = { roomId: v, step: 0, dog: free[0][0] };
+    const r = room(v);
+    if (applyState(r).full) return toast('申し込み済みです', `${r.cls}には、すべての犬が申し込み済みです${r.official ? '（公式競技会は1つの競技に1人1頭です）' : ''}`);
+    S.flow = { roomId: v, step: 0 };
   },
   cancel: () => S.flow = null,
   agree: () => {
-    if (!$('agree').checked) { $('err').textContent = '同意のチェックを入れてください'; $('err').hidden = false; return false; }
-    const d = $('fdog')?.value; if (d && ME.dogs.some(x => x[0] === d) && !entriesOf(S.flow.roomId).some(x => x.handler === ME.handler && x.dog === d)) S.flow.dog = d;
-    S.flow.heat = !!$('heat')?.checked; S.flow.step = 1;
+    const f = S.flow, r = room(f.roomId), sem = r.cls === 'セミナー', bad = formError('err');
+    if (!$('agree').checked) return bad('同意のチェックを入れてください');
+    const taken = applyState(r).names, dogs = sem ? [''] : [...document.querySelectorAll('input[name=dg]:checked')].map(x => x.value);
+    if (!dogs.length) return bad('参加する犬を1頭以上えらんでください');
+    if (r.official && dogs.length > 1) return bad('公式競技会は、1つの競技に1人1頭です');
+    if (dogs.some(d => d && (!ME.dogs.some(x => x[0] === d) || taken.includes(d)))) return bad('申し込み済みの犬はえらべません');
+    if (entriesOf(r.id).length + dogs.length > r.cap) return bad(`定員を超えます（あと${r.cap - entriesOf(r.id).length}組）`);
+    f.dogs = dogs; f.heats = [...document.querySelectorAll('input[name=dh]:checked')].map(x => x.value).filter(d => dogs.includes(d)); f.step = 1;
   },
   pay: () => {
-    const rid = S.flow.roomId, r = room(rid), id = 'me' + Date.now(), sem = r.cls === 'セミナー';
-    S.entries.push({ id, roomId: rid, handler: ME.handler, dog: sem ? '' : S.flow.dog, breed: sem ? '' : breedOf(S.flow.dog), heat: !!S.flow.heat });
-    S.flow.step = 2;
-    const hostAcc = Object.values(ACC).find(a => a.hid === ev(r.eventId).hostId);
-    if (hostAcc) push(hostAcc.handler, '新しい申込があります', `${ME.handler}さんが ${ev(r.eventId).title}・${r.cls} に申し込みました`); // ホストへ
-    if (isLesson(r)) return push(ME.handler, 'お申し込みが完了しました', `${ev(r.eventId).title}・${ev(r.eventId).date}`, id);
-    const ord = S.order[rid], h = ord.findIndex(x => entry(x).heat);
-    if (S.flow.heat || h < 0) ord.push(id); else ord.splice(h, 0, id); // ヒート中でなければヒート犬の前へ
-    push(ME.handler, '参加が完了しました', `${ev(r.eventId).title}・${r.cls}。出走順は主催者が確定すると見られます`, id);
+    const f = S.flow, r = room(f.roomId), e0 = ev(r.eventId), ids = f.dogs.map((d, i) => 'me' + Date.now() + i);
+    f.dogs.forEach((d, i) => {
+      const heat = f.heats.includes(d);
+      S.entries.push({ id: ids[i], roomId: r.id, handler: ME.handler, dog: d, breed: breedOf(d), heat });
+      if (isLesson(r)) return;
+      const ord = S.order[r.id], h = ord.findIndex(x => entry(x).heat);
+      if (heat || h < 0) ord.push(ids[i]); else ord.splice(h, 0, ids[i]); // ヒート中でなければヒート犬の前へ
+    });
+    f.step = 2;
+    const hostAcc = Object.values(ACC).find(a => a.hid === e0.hostId), dogs = f.dogs.filter(Boolean).join('・');
+    if (hostAcc) push(hostAcc.handler, '新しい申込があります', `${ME.handler}さんが ${e0.title}・${r.cls} に申し込みました${dogs ? `（${dogs}）` : ''}`); // ホストへ
+    push(ME.handler, isLesson(r) ? 'お申し込みが完了しました' : '参加が完了しました', `${e0.title}・${r.cls}${dogs ? `（${dogs}）` : ''}${isLesson(r) ? `・${e0.date}` : '。出走順は主催者が確定すると見られます'}`, ids[0]);
   },
   // ホスト登録・主催イベントの管理
   startcreate: () => {
@@ -968,6 +975,10 @@ function push(to, title, body, entryId) {
 }
 const unread = () => S.inbox.filter(n => n.to === ME.handler && !n.read).length;
 const tellRoom = (r, title, body) => entriesOf(r.id).forEach(en => push(en.handler, title, body, en.id)); // 参加者全員に通知
+function dogFee() { // 申込画面: えらんだ頭数と参加費
+  const r = room(S.flow.roomId), n = document.querySelectorAll('input[name=dg]:checked').length;
+  $('dogFee').textContent = n ? `${n}頭 × ${yen(r.fee)} ＝ ${yen(n * r.fee)}` : '参加する犬をえらんでください';
+}
 function feeNote() { $('feeNote').textContent = feeText(+$('feeIn').value || 0, $('official')?.value === '1'); }
 function showCards(animate) { document.querySelectorAll('.ecard').forEach((c, i) => animate ? setTimeout(() => c.classList.add('in'), 150 + 120 * Math.min(i, 8)) : c.classList.add('in')); }
 
@@ -979,6 +990,7 @@ function render() {
   $('bell').innerHTML = ic('bell', 20) + (unread() ? `<span class="badge">${unread()}</span>` : '');
   $('main').innerHTML = (V[S.view] || V.search)();
   if ($('feeNote')) feeNote();
+  if ($('dogFee')) dogFee();
   if ($('cls') && $('elWrap')) $('elWrap').hidden = $('cls').value === 'セミナー';
   showCards(enterNext); enterNext = false;
   save();
@@ -1017,6 +1029,7 @@ document.addEventListener('change', e => {
   if (t.id === 'ftype') { S.filter = t.value; render(); }
   if (t.id === 'cls' && $('elWrap')) $('elWrap').hidden = t.value === 'セミナー';
   if (t.closest('#roomForm, #editForm')) feeNote();
+  if (t.name === 'dg') dogFee();
 });
 document.addEventListener('submit', e => {
   e.preventDefault();
