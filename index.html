@@ -1,0 +1,1060 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<style>[hidden]{display:none!important}</style>
+<title>ノーズワーク競技会 試作</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+/* ===== 見た目 =====
+   白いページの中央にiPhone風フレーム。中身はクリーム色×オレンジのポップな犬デザイン。幅480px以下はフレームなしで全画面。
+   構成: トークン → 枠・ヘッダー・ナビ → 大会カード → 部品（ボタン・カード・表・フォーム）→ スマホ全画面 */
+:root{
+  --bg:#fff6e5; --surface:#fff; --ink:#3a2a1c; --muted:#85735f; --line:#f1dfbf;
+  --primary:#ff7a3d; --primary-dark:#d9531a; --primary-soft:#ffe6d6; --sun:#ffc83d; --me:#fff1c9;
+  --ok:#14805a; --warn:#b86a00; --bad:#d6333c;
+}
+*{box-sizing:border-box;font-family:'M PLUS Rounded 1c','Hiragino Maru Gothic ProN','Hiragino Sans',sans-serif}
+html,body{height:100%;margin:0}
+body{background:#fff;color:var(--ink);font-size:15px;line-height:1.6}
+.stage{height:100%;width:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;background:#fff}
+
+/* --- 枠・ヘッダー・ナビ --- */
+.phone{position:relative;flex:none;width:375px;height:780px;background:var(--bg);color:var(--ink);border-radius:52px;overflow:hidden;transform:scale(var(--s,1));
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.08),0 0 0 1px rgba(0,0,0,.6),0 0 0 10px #1a1a1e,0 0 0 11px rgba(255,255,255,.06),0 0 60px rgba(0,0,0,.35)}
+.phone::after{content:'';position:absolute;left:0;right:0;bottom:0;height:120px;background:linear-gradient(to top,var(--bg) 45%,transparent);pointer-events:none;z-index:20} /* ナビの下で文字が重ならないように */
+.island{position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:28px;background:#000;border-radius:0 0 16px 16px;z-index:50}
+.top{position:absolute;top:0;left:0;right:0;z-index:30;background:rgba(255,246,229,.97);border-bottom:2px solid var(--line);padding:50px 20px 10px}
+.top .bar{display:flex;align-items:center;justify-content:space-between}
+.top .cap{font-size:11px;color:var(--muted)}
+.badge{position:absolute;top:-5px;right:-5px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--bad);color:#fff;border:2px solid var(--bg);font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center}
+.brand{display:flex;align-items:center;gap:8px;background:none;border:0;color:var(--ink);font-size:19px;font-weight:800;cursor:pointer;padding:0}
+.iconbtn{position:relative;background:#fff;border:2px solid var(--line);color:var(--primary-dark);cursor:pointer;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.scroll{position:absolute;inset:0;overflow-y:auto;padding:132px 20px 120px}
+.scrollbar-hide::-webkit-scrollbar{display:none}
+.scrollbar-hide{-ms-overflow-style:none;scrollbar-width:none}
+.nav{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);z-index:30;display:flex;gap:2px;padding:5px;background:#fff;border:2px solid var(--line);border-radius:999px;box-shadow:0 4px 0 rgba(58,42,28,.08),0 12px 28px rgba(58,42,28,.18)}
+.nav button{display:flex;flex-direction:column;align-items:center;gap:1px;background:none;border:0;border-radius:999px;color:var(--muted);font-size:10px;font-weight:800;padding:6px 8px;min-width:66px;white-space:nowrap;cursor:pointer}
+.nav button[aria-current="page"]{background:var(--primary-soft);color:var(--primary-dark)}
+.toast{position:absolute;left:50%;top:34px;transform:translateX(-50%);width:calc(100% - 32px);background:var(--ink);color:#fff;border-radius:18px;padding:12px 16px;box-shadow:0 8px 24px rgba(58,42,28,.4);z-index:60;font-size:14px}
+.toast b{display:block;font-size:12px;opacity:.7}
+@media (prefers-reduced-motion:no-preference){.toast{animation:drop .25s ease-out}@keyframes drop{from{transform:translate(-50%,-12px);opacity:0}}}
+
+/* --- 大会カード（写真があれば写真、なければ犬の足跡の背景） --- */
+.ecard{position:relative;display:block;width:100%;height:200px;border-radius:24px;overflow:hidden;color:#fff;box-shadow:0 5px 0 rgba(58,42,28,.14);opacity:0;transform:translateY(24px);transition:all .7s ease-out}
+.ecard.in,.ecard.hero{opacity:1;transform:none}
+.ecard.hero{transition:none}
+.ecard .bg,.ecard .fade{position:absolute;inset:0}
+.ecard img.bg{width:100%;height:100%;object-fit:cover}
+.ecard .fade{background:linear-gradient(to top,rgba(40,20,10,.62),rgba(40,20,10,0) 68%)}
+.ecard .tl,.ecard .tr{position:absolute;top:12px}
+.ecard .tl{left:12px} .ecard .tr{right:12px}
+.ecard .info{position:absolute;left:16px;right:16px;bottom:12px;display:flex;flex-direction:column;gap:3px;pointer-events:none}
+.ecard .info strong{font-size:17px;font-weight:800;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ecard.hero .info strong{font-size:20px;-webkit-line-clamp:3}
+.ecard .info>span{font-size:12px;font-weight:500;color:rgba(255,255,255,.92)}
+.gpill{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.93);color:var(--ink);border-radius:999px;padding:3px 12px;font-size:12px;font-weight:800;box-shadow:0 2px 0 rgba(58,42,28,.18)}
+.cover{position:absolute;inset:0;background:none;border:0;border-radius:inherit;cursor:pointer}
+.ecard.hero .cover{display:none}
+.hostchip{pointer-events:auto;align-self:flex-start;max-width:100%;display:inline-flex;align-items:center;gap:5px;background:#fff;border:0;border-radius:99px;padding:2px 9px 2px 3px;color:var(--ink);font-size:11px;font-weight:700;cursor:pointer;box-shadow:0 2px 0 rgba(58,42,28,.18)}
+.hostchip.flat{box-shadow:none;border:2px solid var(--line)}
+.hostchip svg{flex:none;color:var(--primary)}
+.mav{flex:none;width:18px;height:18px;border-radius:50%;background:var(--primary-soft);color:var(--primary-dark);display:inline-flex;align-items:center;justify-content:center;overflow:hidden}
+.mav img{width:100%;height:100%;object-fit:cover}
+.mav.lg{width:44px;height:44px}
+@media (prefers-reduced-motion:reduce){.ecard{opacity:1;transform:none;transition:none}}
+
+/* --- 文字・レイアウト --- */
+h1{font-size:24px;font-weight:800;line-height:1.35;margin:8px 0 4px;text-wrap:balance}
+h2{font-size:17px;font-weight:800;margin:24px 0 10px}
+h2::before{content:'';display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--sun);margin-right:8px;vertical-align:1px}
+.sub{color:var(--muted);font-size:13px}
+.num{font-variant-numeric:tabular-nums}
+.stack{display:flex;flex-direction:column;gap:16px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.row>.grow{flex:1;min-width:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ok{color:var(--ok)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+ul.sub{margin:0;padding-left:1.2em}
+.list:empty,.stack:empty{display:none}
+
+/* --- 部品: カード・リスト・チップ・ボタン・タブ --- */
+.card{background:var(--surface);border:2px solid var(--line);border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:8px;box-shadow:0 3px 0 var(--line)}
+.card.link{position:relative}
+.card.tap{width:100%;text-align:left}
+.list{display:flex;flex-direction:column;background:var(--surface);border:2px solid var(--line);border-radius:20px;overflow:hidden;box-shadow:0 3px 0 var(--line)}
+.list>*{padding:12px 14px;border-bottom:2px solid var(--line)}
+.list>*:last-child{border-bottom:0}
+.list .me,tr.me td{background:var(--me)}
+.list .dragging{background:var(--me);box-shadow:0 4px 14px rgba(58,42,28,.25)}
+.chip{display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:800;padding:3px 10px;border-radius:99px;background:#ffefc9;color:#7a4b00;white-space:nowrap}
+.chip.off{background:var(--primary);color:#fff}
+.chip.heat{background:#ffe0e3;color:#b3202b}
+.btn{font:inherit;font-weight:800;font-size:15px;min-height:46px;border:0;border-radius:999px;padding:10px 20px;background:var(--primary);color:#fff;cursor:pointer;text-align:center;box-shadow:0 4px 0 var(--primary-dark);transition:transform .08s,box-shadow .08s}
+.btn:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 var(--primary-dark)}
+.btn.ghost{background:#fff;color:var(--ink);border:2px solid var(--line);box-shadow:0 3px 0 var(--line)}
+.btn.ghost:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 var(--line)}
+.btn.sm{min-height:36px;padding:6px 14px;font-size:13px;box-shadow:0 3px 0 var(--primary-dark)}
+.btn.sm.ghost{box-shadow:0 2px 0 var(--line)}
+.btn:disabled{background:#ebe4d6;color:#a29684;border-color:#ebe4d6;box-shadow:none;cursor:not-allowed}
+.tap{cursor:pointer;background:none;border:0;font:inherit;color:inherit;text-align:left;width:100%}
+.hbar{display:flex;gap:8px;overflow-x:auto;margin-bottom:10px;padding:2px 2px 6px}
+.hbar .btn{white-space:nowrap;flex:none}
+.hbar::-webkit-scrollbar{display:none}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.avatar{position:relative;flex:none;width:76px;height:76px;border-radius:50%;background:var(--primary-soft);border:3px solid #fff;box-shadow:0 0 0 2px var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--primary-dark);flex-direction:row}
+.avatar img{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.avatar .cam{position:absolute;right:-4px;bottom:-4px;width:26px;height:26px;border-radius:50%;background:var(--primary);color:#fff;border:2px solid #fff;display:flex;align-items:center;justify-content:center}
+.vb{display:inline-flex;align-items:center;gap:3px;color:var(--primary-dark);font-size:11px;font-weight:800;vertical-align:middle;white-space:nowrap}
+.stars{color:var(--sun);letter-spacing:1px}
+.empty{align-items:center;text-align:center;padding:22px 16px}
+details.fold{margin-top:16px}
+details summary{cursor:pointer;font-weight:800;padding:8px 0}
+details.filters{margin:12px 0}
+details.filters summary{display:inline-block;background:#fff;border:2px solid var(--line);border-radius:999px;padding:6px 16px;font-size:13px;box-shadow:0 2px 0 var(--line);list-style:none}
+details.filters summary::-webkit-details-marker{display:none}
+details.filters[open] summary{margin-bottom:10px}
+.steps{display:flex;gap:6px;font-size:12px;color:var(--muted);margin-top:8px}
+.steps span{flex:1;border-top:4px solid var(--line);border-radius:4px;padding-top:4px}
+.steps span.on{border-color:var(--primary);color:var(--ink);font-weight:800}
+.big{font-size:34px;font-weight:800;line-height:1.1}
+.pos{color:var(--muted);font-weight:800;width:2ch;text-align:right}
+.grip{touch-action:none;cursor:grab;padding:6px 10px;font-size:18px;line-height:1;min-width:44px;min-height:44px;box-shadow:none}
+svg text{fill:var(--muted);font-size:10px}
+
+/* --- 表 --- */
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:9px 6px;border-bottom:2px solid var(--line);text-align:left}
+th{font-size:12px;color:var(--muted);font-weight:700}
+tr[data-a]{cursor:pointer}
+.money td:last-child{text-align:right}
+.money tr.total td{font-weight:800;border-bottom:0}
+
+/* --- フォーム --- */
+label{font-size:13px;font-weight:700;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+input,select{font:inherit;font-size:16px;color:var(--ink);background:#fff;border:2px solid var(--line);border-radius:14px;padding:11px 12px;width:100%}
+input:disabled,select:disabled{opacity:.55;background:#faf3e6}
+input[type=checkbox],input[type=radio]{width:auto;accent-color:var(--primary)}
+fieldset{border:2px solid var(--line);border-radius:16px;margin:0;padding:8px 12px}
+legend{font-size:13px;font-weight:700;color:var(--muted);padding:0 6px}
+.checks{display:flex;flex-wrap:wrap;gap:6px 14px}
+.checks label{flex-direction:row;align-items:center;gap:6px;color:var(--ink);font-size:15px;font-weight:500;min-height:36px}
+.agree{flex-direction:row;align-items:center;gap:8px;color:var(--ink);font-weight:500}
+
+/* --- スマホ（幅480px以下）はフレームなしで全画面 --- */
+@media (max-width:480px){
+  .phone{width:100%;height:100%;border-radius:0;box-shadow:none;transform:none}
+  .island{display:none}
+  .top{padding-top:calc(env(safe-area-inset-top,0px) + 12px)}
+  .scroll{padding-top:calc(env(safe-area-inset-top,0px) + 84px)}
+  .nav{bottom:calc(env(safe-area-inset-bottom,0px) + 14px)}
+  .toast{top:calc(env(safe-area-inset-top,0px) + 8px)}
+}
+</style>
+
+<div class="stage"><div class="phone">
+  <div class="island"></div>
+  <header class="top">
+    <div class="bar">
+      <button class="brand" data-a="tab" data-v="search" aria-label="ノーズワーク（仮ロゴ）"><span id="logo"></span>ノーズワーク</button>
+      <button class="iconbtn" data-a="bell" aria-label="通知" id="bell"></button>
+    </div>
+    <div class="cap">試作・架空データ。入力はこの端末だけに残ります</div>
+  </header>
+  <div class="scroll scrollbar-hide" id="scroll"><main id="main"></main></div>
+  <nav class="nav" id="nav" aria-label="メイン"></nav>
+  <div id="toast" class="toast" hidden></div>
+</div></div>
+
+<script>
+/* ===== コードの構成 =====
+   1 定数とテスト用データ → 2 状態と取り出し → 3 競技のルール → 4 画面の部品 → 5 各画面 → 6 操作（act）と入力の検証 → 7 イベント処理と起動 */
+
+/* ===== 1. 定数とテスト用データ（すべて架空。IDはダミー） ===== */
+const FEE_RATE = 0.05;
+const REGIONS = { '北海道・東北': '北海道 青森県 岩手県 宮城県 秋田県 山形県 福島県', '関東': '茨城県 栃木県 群馬県 埼玉県 千葉県 東京都 神奈川県',
+  '中部': '新潟県 富山県 石川県 福井県 山梨県 長野県 岐阜県 静岡県 愛知県', '近畿': '三重県 滋賀県 京都府 大阪府 兵庫県 奈良県 和歌山県',
+  '中国・四国': '鳥取県 島根県 岡山県 広島県 山口県 徳島県 香川県 愛媛県 高知県', '九州・沖縄': '福岡県 佐賀県 長崎県 熊本県 大分県 宮崎県 鹿児島県 沖縄県' };
+const PLACES = [...Object.values(REGIONS).join(' ').split(' '), 'オンライン'];
+const regionOf = p => Object.keys(REGIONS).find(r => REGIONS[r].split(' ').includes(p)) || 'オンライン';
+const ELEMENTS = ['コンテナ', '室内', '屋外', '車両'], CLASSES = ['NW1', 'NW2', 'NW3', 'ファンマッチ', '体験', 'セミナー'];
+const TYPES = ['非公式・ファンマッチ', '公式競技会', '体験会', 'セミナー'];
+const isLesson = r => r.cls === '体験' || r.cls === 'セミナー'; // 出走順・記録・結果のないイベント
+
+const mkAcc = o => Object.defineProperties(o, { dog: { get: () => o.dogs[0][0] }, breed: { get: () => o.dogs[0][1] } });
+const ACC = { // テスト用の3アカウント。アカウント画面の「試作」で切り替える
+  u1: mkAcc({ key: 'u1', handler: '佐藤 みなみ（架空）', id: 'M-0420', hid: 'h4', note: '多頭飼い・競技会に2クラス参加中',
+              dogs: [['コタロウ', '柴犬', 'ダミー-0301'], ['ムギ', 'ミニチュアダックス', 'ダミー-0302']] }),
+  u2: mkAcc({ key: 'u2', handler: '鈴木 けんた（架空）', id: 'M-0518', hid: 'h3', note: '登録したて・開催はこれから', dogs: [['ハル', 'ボーダーコリー', 'ダミー-0601']] }),
+  u3: mkAcc({ key: 'u3', handler: 'くんくん先生（架空）', id: 'M-0107', hid: 'h1', note: '開催実績あり・大会を公開中', dogs: [['クルミ', 'ミニチュアダックス', 'ダミー-0411']] }),
+};
+const ME = new Proxy({}, { get: (_, k) => ACC[S.acct][k] }); // いま使っているアカウント
+
+const hosts = { // ホストの開催実績
+  h1: { held: 14, teams: 196, rating: 4.8,
+        reviews: [['初参加でも当日の流れが分かりやすかった', '2026-09 ファンマッチ'], ['出番の通知のおかげで車で待てて助かった', '2026-07 ファンマッチ'], ['結果がその日のうちに見られた', '2026-05 体験会']],
+        past: [['2026-09', '秋の練習会', '練習会', 12], ['2026-09', '夏の終わりのファンマッチ', '非公式・ファンマッチ', 18], ['2026-07', '夏のファンマッチ', '非公式・ファンマッチ', 16],
+               ['2026-05', 'はじめてのノーズワーク体験会（春）', '体験会', 9], ['2026-03', '春のファンマッチ', '非公式・ファンマッチ', 15]] },
+  h2: { held: 5, teams: 82, rating: 4.6, reviews: [['会場が広くて犬が落ち着けた', '2026-08 ファンマッチ']],
+        past: [['2026-08', 'スニッフ夏のファンマッチ', '非公式・ファンマッチ', 17], ['2026-05', '春の室内ファンマッチ', '非公式・ファンマッチ', 15], ['2025-11', 'NW1 競技会（公式）', '公式競技会', 20]] },
+  h3: { held: 0, teams: 0, rating: 0, reviews: [], past: [] },
+  h4: { held: 0, teams: 0, rating: 0, reviews: [], past: [] },
+};
+const PEOPLE = { // テスト用アカウント以外のホスト。joined=[年月, 大会名, 犬の名前[]]
+  h2: { name: '横浜スニッフ 田村（架空）', id: 'M-0233', dogs: [['ソラ', 'ボーダーコリー', 'ダミー-0522'], ['モモ', '柴犬', 'ダミー-0523']], joined: [['2026-09', '秋の練習会', ['ソラ', 'モモ']], ['2026-06', '夏の体験会', ['モモ']]] },
+};
+const history = [ // 犬の過去成績
+  { dog: 'コタロウ', date: '2026-03', title: '春のファンマッチ', element: 'コンテナ', score: 1, t: 118300, rank: 9 },
+  { dog: 'コタロウ', date: '2026-05', title: '体験会ミニ競技', element: '屋外', score: 2, t: 102400, rank: 6 },
+  { dog: 'コタロウ', date: '2026-07', title: '夏のファンマッチ', element: '室内', score: 2, t: 97800, rank: 5 },
+  { dog: 'コタロウ', date: '2026-09', title: '秋の練習会', element: 'コンテナ', score: 3, t: 88120, rank: 3 },
+  { dog: 'コタロウ', date: '2026-09', title: '秋の練習会', element: '室内', score: 3, t: 91500, rank: 4 },
+  { dog: 'ムギ', date: '2026-06', title: '夏の体験会', element: 'コンテナ', score: 2, t: 125000, rank: 7 },
+  { dog: 'ムギ', date: '2026-09', title: '秋の練習会', element: 'コンテナ', score: 2, t: 109800, rank: 6 },
+  { dog: 'ハル', date: '2026-07', title: '夏のファンマッチ', element: '室内', score: 3, t: 76500, rank: 2 },
+  { dog: 'ハル', date: '2026-09', title: '秋の練習会', element: 'コンテナ', score: 3, t: 71200, rank: 1 },
+  { dog: 'クルミ', date: '2026-03', title: '春のファンマッチ', element: '屋外', score: 1, t: 125000, rank: 8 },
+  { dog: 'クルミ', date: '2026-08', title: '夏の合同練習会', element: 'コンテナ', score: 2, t: 101300, rank: 5 },
+];
+
+function seed() { // 初期状態
+  const ev = (id, type, title, date, place, pref, fee, cap, hostId, official, priv = false) => ({ id, type, title, date, place, pref, fee, cap, hostId, official, priv });
+  const events = [
+    ev('e1', '非公式・ファンマッチ', '秋のファンマッチ in 多摩川河川敷', '2026-11-15', '東京都 狛江市', '東京都', 7000, 16, 'h1', false),
+    ev('e2', '体験会', 'はじめてのノーズワーク体験会', '2026-11-29', '神奈川県 川崎市', '神奈川県', 1500, 10, 'h1', false),
+    ev('e3', '非公式・ファンマッチ', '冬のファンマッチ 室内戦', '2026-12-20', '神奈川県 横浜市', '神奈川県', 9000, 20, 'h2', false),
+    ev('e4', '公式競技会', 'NW1・NW2 競技会（ルール準拠）', '2027-01-24', '埼玉県 さいたま市', '埼玉県', 10000, 20, 'h2', true),
+    ev('e5', 'セミナー', 'ハンドリング基礎セミナー', '2027-02-07', 'オンライン', 'オンライン', 3000, 30, 'h1', false),
+    ev('e6', '非公式・ファンマッチ', 'くんくん仲間うち練習会（限定公開）', '2026-11-23', '東京都 世田谷区', '東京都', 3000, 8, 'h1', false, true),
+  ];
+  events.forEach(e => e.meet = { e1: '09:00', e2: '10:00', e3: '09:30', e4: '08:30', e5: '19:00', e6: '13:00' }[e.id]);
+  const rm = (id, eventId, cls, elements, cap, fee, official) => ({ id, eventId, cls, elements, cap, fee, official });
+  const rooms = [
+    rm('r1', 'e1', 'NW1', ['コンテナ', '室内'], 16, 7000, false), rm('r2', 'e1', 'NW2', ['コンテナ', '室内', '屋外'], 12, 8000, false),
+    rm('r3', 'e2', '体験', ['コンテナ'], 10, 1500, false), rm('r4', 'e3', 'NW1', ['室内'], 20, 9000, false),
+    rm('r5', 'e4', 'NW1', ['コンテナ', '室内'], 20, 10000, true), rm('r6', 'e5', 'セミナー', ['座学'], 30, 3000, false),
+    rm('r7', 'e6', 'NW1', ['コンテナ'], 8, 3000, false),
+  ];
+  rooms[0].orderFixed = true; // r1は進行中の競技会（出走順が確定し、記録が入り始めている）
+  const dogs = ['ハナ トイプードル', 'ルーク ボーダーコリー', 'モカ MIX', 'ソラ ジャックラッセル', 'きなこ 柴犬', 'レオ ラブラドール', 'ココ ミニチュアダックス', 'ラテ コーギー', 'マロン トイプードル', 'チャイ シェルティ', 'ベル ビーグル', 'ポポ パピヨン'];
+  const owners = ['田中', '鈴木', '高橋', '伊藤', '渡辺', '中村', '小林', '加藤', '吉田', '山本', '松本', '井上'];
+  const entry = (id, roomId, handler, dog, breed, heat = false) => ({ id, roomId, handler, dog, breed, heat });
+  const entries = dogs.map((d, i) => entry('n' + i, 'r1', owners[i] + 'さん', ...d.split(' '), i === 6));
+  ['佐々木', '山口', '木村', '林', '清水', '山崎', '森', '池田'].forEach((h, i) => entries.push(entry('m' + i, 'r2', h + 'さん', ['ジロ', 'ユキ', 'テツ', 'ミルク', 'ハチ', 'コハク', 'ゴン', 'リン'][i], 'MIX')));
+  ['藤田', '石井', '前田'].forEach((h, i) => entries.push(entry('t' + i, 'r3', h + 'さん', ['ポコ', 'リリー', 'タロ'][i], 'MIX')));
+  ['青木', '岡田', '後藤', '長谷川', '村上', '近藤'].forEach((h, i) => entries.push(entry('s' + i, 'r6', h + 'さん', '', '')));
+  entries.push(entry('a1', 'r1', ACC.u1.handler, 'コタロウ', '柴犬'), entry('a2', 'r2', ACC.u1.handler, 'ムギ', 'ミニチュアダックス'), entry('b1', 'r4', ACC.u2.handler, 'ハル', 'ボーダーコリー'));
+  const order = {}; // 出走順（ヒート中の犬は最後）
+  rooms.forEach(r => { const es = entries.filter(e => e.roomId === r.id); order[r.id] = isLesson(r) ? [] : [...es.filter(e => !e.heat), ...es.filter(e => e.heat)].map(e => e.id); });
+  const ok = (t, score = 3, faults = 0) => ({ t, score, faults, st: 'ok' });
+  const results = { 'r1:コンテナ': { n0: ok(83450), n1: ok(61200), n2: ok(95010, 2, 1), n3: { t: 0, score: 0, faults: 0, st: 'dq' }, n4: ok(61200) } };
+  return { acct: 'u1', hostOf: { u1: false, u2: true, u3: true }, isHost: false, avatars: {}, tab: 'search', view: 'search',
+    eventId: 'e1', roomId: 'r1', hostEventId: 'e1', events, rooms, entries, order, results, inbox: [], nid: 0, called: {}, callOk: {}, seen: [], flow: null, dog: 'コタロウ',
+    filter: 'すべて', cls: 'すべて', region: 'すべて', q: '', element: null };
+}
+
+/* ===== 2. 状態と取り出し ===== */
+let S;
+try { S = JSON.parse(localStorage.getItem('nw-proto6')) || seed(); } catch { S = seed(); }
+const save = () => { try { localStorage.setItem('nw-proto6', JSON.stringify(S)); } catch {} };
+
+const $ = id => document.getElementById(id);
+const ev = id => S.events.find(e => e.id === id);
+const room = id => S.rooms.find(r => r.id === id);
+const entry = id => S.entries.find(e => e.id === id);
+const roomsOf = eid => S.rooms.filter(r => r.eventId === eid);
+const entriesOf = rid => S.entries.filter(e => e.roomId === rid);
+const resOf = (rid, el) => S.results[rid + ':' + el] || {}; // 結果は「クラス×課目」ごと
+const hostEv = () => ev(S.hostEventId) || ev('e1'); // 管理中の大会
+const curRoom = e => { const rs = roomsOf(e.id); if (!rs.some(r => r.id === S.roomId)) S.roomId = rs[0].id; return S.roomId; };
+const curEl = r => (r.elements.includes(S.element) ? S.element : (S.element = r.elements[0]));
+const visible = e => !e.priv || S.seen.includes(e.id); // 限定公開はリンクを開いた端末にだけ出る
+const breedOf = n => (ME.dogs.find(d => d[0] === n) || [])[1] || '';
+const elStr = r => r.elements.join('・');
+const elLine = r => r.cls === 'セミナー' ? '' : `課目: ${elStr(r)}`;
+const placeOf = (pref, venue) => venue ? `${pref} ${venue}` : pref;
+const isPhoto = src => typeof src === 'string' && src.startsWith('data:image/jpeg;base64,'); // 自分で縮小したJPEGだけ表示する
+
+const joinedList = names => { // 犬の履歴から「参加した大会」の一覧を作る
+  const m = new Map();
+  history.filter(h => names.includes(h.dog)).forEach(h => { const k = h.date + h.title; if (!m.has(k)) m.set(k, [h.date, h.title, new Set()]); m.get(k)[2].add(h.dog); });
+  return [...m.values()].map(([d, t, dogs]) => [d, t, [...dogs]]).sort((a, b) => b[0].localeCompare(a[0]));
+};
+const person = hid => { // プロフィール。テスト用アカウントのホストIDならそのアカウント、なければ架空のホスト
+  const a = Object.values(ACC).find(x => x.hid === hid);
+  return a ? { name: a.handler, id: a.id, avatar: S.avatars?.[a.key], dogs: a.dogs, joined: joinedList(a.dogs.map(d => d[0])) } : PEOPLE[hid];
+};
+
+/* ===== 3. 競技のルール ===== */
+const yen = n => Number(n).toLocaleString('ja-JP') + '円';
+const fee = n => Math.round(n * FEE_RATE);
+// 「12345」→ 1:23.45（下2桁=1/100秒、次の2桁=秒、残り=分）
+function parseTime(s) {
+  const d = String(s).replace(/\D/g, '');
+  if (!d || d.length > 6) return null;
+  const n = +d, sec = Math.floor(n / 100) % 100;
+  return sec > 59 ? null : (Math.floor(n / 10000) * 60 + sec) * 1000 + n % 100 * 10;
+}
+const fmtTime = ms => ms == null ? '—' : `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}.${String(Math.floor(ms % 1000 / 10)).padStart(2, '0')}`;
+// 得点（多い順）→ フォルト（少ない順）→ タイム（速い順）。すべて同じなら同順位。失格・中止は順位なし
+const cmp = (a, b) => b.r.score - a.r.score || a.r.faults - b.r.faults || a.r.t - b.r.t;
+function rank(rows) {
+  const ok = rows.filter(x => x.r.st === 'ok').sort(cmp);
+  ok.forEach((x, i) => x.rank = i && cmp(ok[i - 1], x) === 0 ? ok[i - 1].rank : i + 1);
+  return [...ok, ...rows.filter(x => x.r.st !== 'ok')];
+}
+// 呼び出し: 基本はグレーで押せない。「記録して次へ」を押すと、次の犬だけ呼び出せる（競技の最初の1頭は記録前でも呼べる）
+const callState = (rid, el, cur) => {
+  const key = rid + ':' + el, called = !!S.called[key + ':' + cur];
+  return { called, can: !called && (S.callOk[key] === cur || (!Object.keys(resOf(rid, el)).length && cur === S.order[rid][0])) };
+};
+const nextIndex = (rid, el) => S.order[rid].findIndex(id => !resOf(rid, el)[id]);
+// 競技会の状態: before=開始前 / live=進行中 / after=終了。記録が1件でも入ると進行中、全頭・全課目が揃うと終了
+function roomPhase(r) {
+  if (isLesson(r)) return 'lesson';
+  const ord = S.order[r.id];
+  if (!r.elements.some(el => Object.keys(resOf(r.id, el)).length)) return 'before';
+  return r.elements.every(el => ord.length && ord.every(id => resOf(r.id, el)[id])) ? 'after' : 'live';
+}
+function turnState(r, en) { // 進行中の競技で、自分の犬の状態
+  const ord = S.order[r.id], el = r.elements.find(x => !ord.every(id => resOf(r.id, x)[id]));
+  if (resOf(r.id, el)[en.id]) return { t: '走行済み', c: '' };
+  const left = ord.indexOf(en.id) - nextIndex(r.id, el);
+  return left <= 0 ? { t: 'あなたの番です！', c: 'heat' } : { t: `あと${left}頭`, c: left <= 3 ? 'off' : '' };
+}
+function dupHandlers(rid) { // 1競技につきハンドラー1人＝犬1頭
+  const dogs = {};
+  entriesOf(rid).forEach(e => (dogs[e.handler] ??= new Set()).add(e.dog));
+  return Object.keys(dogs).filter(h => dogs[h].size > 1);
+}
+const feeText = (f, official) => `参加者は${yen(f)}を支払い、ホストの受け取りは${yen(f - fee(f))}/組（手数料${FEE_RATE * 100}％）。` + (official ? '公式は2か月前までの開催申請と、8日以内の結果報告が必要です。' : '');
+
+/* ===== 4. 画面の部品 ===== */
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const ICONS = {
+  search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  ticket: '<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/>',
+  paw: '<circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"/>',
+  user: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  badge: '<path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/><path d="m9 12 2 2 4-4"/>',
+  camera: '<path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/>',
+  lock: '<rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  bell: '<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>',
+  megaphone: '<path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/>',
+};
+const ic = (n, size = 20) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]}</svg>`;
+const dogFace = (s = 28) => `<svg width="${s}" height="${s}" viewBox="0 0 48 48" aria-hidden="true"><ellipse cx="9" cy="20" rx="7" ry="12" fill="#a8582a" transform="rotate(12 9 20)"/><ellipse cx="39" cy="20" rx="7" ry="12" fill="#a8582a" transform="rotate(-12 39 20)"/><circle cx="24" cy="26" r="16" fill="#ffb35c"/><ellipse cx="24" cy="32" rx="9" ry="7" fill="#ffe3c2"/><circle cx="18" cy="23" r="2.4" fill="#3a2a1c"/><circle cx="30" cy="23" r="2.4" fill="#3a2a1c"/><ellipse cx="24" cy="29" rx="3.4" ry="2.4" fill="#3a2a1c"/><path d="M24 31.4v2.6M20.5 34.5c1.6 1.6 5.4 1.6 7 0" stroke="#3a2a1c" stroke-width="1.6" fill="none" stroke-linecap="round"/></svg>`;
+
+const vbadge = () => `<span class="vb" title="ホスト認証済み">${ic('badge', 15)}認証済みホスト</span>`;
+const hb = en => en.handler === ME.handler && S.isHost ? vbadge() : ''; // 自分がホストなら、参加者一覧の自分の名前の横にも印
+const rate = h => h.reviews.length >= 3 ? `<span class="stars">★</span>${h.rating}` : 'レビュー収集中';
+const miniAv = id => isPhoto(person(id).avatar) ? `<img src="${person(id).avatar}" alt="">` : ic('user', 12);
+const hostChip = (hid, flat) => `<button class="hostchip ${flat ? 'flat' : ''}" data-a="host" data-v="${esc(hid)}"><span class="mav">${miniAv(hid)}</span>${esc(person(hid).name)}${ic('badge', 12)}</button>`;
+const kv = (k, v) => `<div class="row"><span class="sub" style="width:5.5em">${k}</span><span class="grow">${v}</span></div>`;
+const stat = (l, v, u, big = 26) => `<div class="card"><span class="sub">${l}</span><span class="big" style="font-size:${big}px">${v}<span class="sub">${u}</span></span></div>`;
+const empty = (msg, btn = '') => `<div class="card empty">${dogFace(56)}<p class="sub" style="margin:0">${msg}</p>${btn}</div>`;
+const back = (a, v, label = '戻る') => `<button class="btn ghost sm" data-a="${a}" ${v ? `data-v="${v}"` : ''}>‹ ${label}</button>`;
+const tabBar = (items, cur, act, cls = '') => `<div class="hbar" ${cls}>${items.map(([v, l]) => `<button class="btn sm ${v === cur ? '' : 'ghost'}" data-a="${act}" data-v="${v}">${l}</button>`).join('')}</div>`;
+const statusChip = (r, en, ph) => { // イベント一覧の、自分の参加状況
+  if (ph === 'live') { const st = turnState(r, en); return `<span class="chip ${st.c}">${st.t}</span>`; }
+  if (ph === 'after') return '<span class="chip">終了</span>';
+  return ph === 'before' ? `<span class="chip">${r.orderFixed ? `出走順 ${S.order[r.id].indexOf(en.id) + 1}番` : '出走順 未確定'}</span>` : '';
+};
+const elPicker = (r, cur) => r.elements.length < 2 ? '' : `<div class="row" style="margin:6px 0"><span class="sub">課目</span>${r.elements.map(el => `<button class="btn sm ${el === cur ? '' : 'ghost'}" data-a="el" data-v="${esc(el)}">${esc(el)}</button>`).join('')}</div>`;
+const lessonCard = () => `<div class="card" style="margin-top:10px"><p style="margin:0">セミナー・体験会には、出走順・記録・順位はありません。</p><button class="btn ghost sm" data-a="go" data-v="rooms">詳細で参加者を見る</button></div>`;
+
+// 大会カードの背景: 写真があれば写真、なければ犬の足跡のテンプレート
+const TYPE_BG = { '非公式・ファンマッチ': ['#ff8a3d', '#ff5a4a'], '公式競技会': ['#3d8bff', '#7a5cff'], '体験会': ['#ff7aa8', '#ff9a5c'], 'セミナー': ['#22b8a0', '#2f8fe0'] };
+const PAWS = "<g transform='translate(6 8) scale(1.5)'><circle cx='11' cy='4' r='2'/><circle cx='18' cy='8' r='2'/><circle cx='20' cy='16' r='2'/><path d='M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z'/></g>";
+const pawTile = `url(data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='96' height='96' viewBox='0 0 96 96'><g fill='none' stroke='white' stroke-opacity='.3' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'>${PAWS}<g transform='translate(48 44) rotate(20 24 24)'>${PAWS}</g></g></svg>`).replace(/['()]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase())})`;
+function cardBg(e) {
+  if (isPhoto(e.photo)) return `<img class="bg" src="${e.photo}" alt="">`;
+  const [c1, c2] = TYPE_BG[e.type] || TYPE_BG[TYPES[0]];
+  return `<span class="bg" style="background-image:${pawTile},linear-gradient(135deg,${c1},${c2});background-size:96px 96px,auto"></span>`;
+}
+function evList() { // 探す: クラスごとに1枚のカード。カード全体を押すと大会ページ、主催者名を押すとプロフィール
+  const q = S.q.trim().toLowerCase(), cards = [];
+  S.events.filter(e => visible(e) && (S.filter === 'すべて' || e.type === S.filter) && (S.region === 'すべて' || e.pref === S.region || regionOf(e.pref) === S.region)
+    && (!q || `${e.title} ${e.place} ${person(e.hostId).name}`.toLowerCase().includes(q))).sort((a, b) => a.date.localeCompare(b.date))
+    .forEach(e => roomsOf(e.id).filter(r => S.cls === 'すべて' || r.cls === S.cls).forEach(r => cards.push(`<div class="ecard">${cardBg(e)}<span class="fade"></span>
+      <span class="tl gpill">${entriesOf(r.id).length}/${r.cap}組</span>
+      <span class="tr gpill">${e.priv ? ic('lock', 12) : ''}${esc(r.cls)}</span>
+      <button class="cover" data-a="open" data-v="${esc(e.id)}" data-d="${esc(r.id)}" aria-label="${esc(e.title)}を開く"></button>
+      <span class="info"><strong>${esc(e.title)}</strong><span class="num">${esc(e.date)}・${yen(r.fee)}・${esc(e.place)}</span>${hostChip(e.hostId)}</span></div>`)));
+  return cards.join('') || empty('条件に合う大会が見つかりませんでした。');
+}
+const resultTable = res => {
+  const rows = rank(Object.keys(res).map(id => ({ e: entry(id), r: res[id] }))), st = { dq: '失格', abort: '中止' };
+  return rows.length ? `<div style="overflow-x:auto"><table><tr><th>順位</th><th>犬／ハンドラー</th><th>得点</th><th>F</th><th>タイム</th></tr>
+    ${rows.map(x => `<tr class="${x.e.handler === ME.handler ? 'me' : ''}"><td class="num">${x.rank ?? '—'}</td><td>${esc(x.e.dog)}<br><span class="sub">${esc(x.e.handler)}</span></td>
+      <td class="num">${x.r.st === 'ok' ? x.r.score : `<span class="bad">${st[x.r.st]}</span>`}</td><td class="num">${x.r.st === 'ok' ? x.r.faults : ''}</td><td class="num">${x.r.st === 'ok' ? fmtTime(x.r.t) : ''}</td></tr>`).join('')}</table></div>` : '<p class="sub">まだ記録がありません。</p>';
+};
+const recText = x => x ? (x.st === 'ok' ? `${x.score}点 F${x.faults} ${fmtTime(x.t)}` : { dq: '失格', abort: '中止' }[x.st]) : '';
+
+// フォーム部品（大会の作成・編集で共通）
+const readEls = () => [...document.querySelectorAll('#elList [data-el]')].map(x => x.dataset.el);
+const elsOk = els => els.length >= 1 && els.length <= 12 && els.every(x => ELEMENTS.includes(x.replace(/\d+$/, '')));
+const elEditor = list => `<fieldset><legend>課目（追加していく）</legend>
+  <div class="checks" id="elList">${list.map(n => `<button type="button" class="btn ghost sm" data-el="${esc(n)}" data-rm aria-label="${esc(n)}を削除">${esc(n)} ×</button>`).join('')}</div>
+  <div class="checks" style="margin-top:8px">${ELEMENTS.map(c => `<button type="button" class="btn sm" data-add="${c}">${c}を追加</button>`).join('')}</div></fieldset>`;
+const placeFields = (e, dis) => `<div class="grid2"><label>都道府県<select id="pref" ${dis}>${PLACES.map(p => `<option ${p === (e ? e.pref : '東京都') ? 'selected' : ''}>${p}</option>`).join('')}</select></label>
+  <label>会場・市区町村<input id="venue" maxlength="30" placeholder="例：狛江市 多摩川河川敷" value="${e ? esc(e.place.startsWith(e.pref) ? e.place.slice(e.pref.length).trim() : e.place) : ''}" ${dis}></label></div>`;
+let photoDraft; // 大会の写真の編集中の値: undefined=変更なし, null=外す, 文字列=新しい写真
+const photoPrev = src => isPhoto(src) ? `<img src="${src}" alt="選んだ写真" style="width:100%;height:120px;object-fit:cover;border-radius:14px">` : '<div class="sub">未設定（犬の足跡の背景になります）</div>';
+const photoField = (e, dis) => `<div class="card" style="gap:8px;padding:12px"><div class="sub">大会の写真（任意）</div><div id="photoPrev">${photoPrev(e && e.photo)}</div>
+  <div class="row"><label class="btn ghost sm" style="flex-direction:row;color:var(--ink)">写真を選ぶ<input id="photo" type="file" accept="image/jpeg,image/png,image/webp" hidden ${dis}></label><button type="button" class="btn ghost sm" data-photo-clear ${dis}>写真を外す</button></div></div>`;
+function imageToJpeg(file, size, square, done) { // 選んだ画像を端末内で縮小して、JPEGの文字列にする
+  if (!file) return;
+  if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size > 8e6) return toast('写真を読み込めません', 'JPEG・PNG・WebP、8MBまでの画像を選んでください');
+  const fr = new FileReader();
+  fr.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const side = Math.min(img.width, img.height), k = square ? size / side : Math.min(1, size / img.width), c = document.createElement('canvas');
+      c.width = square ? size : Math.round(img.width * k); c.height = square ? size : Math.round(img.height * k);
+      const g = c.getContext('2d');
+      if (square) g.drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, size, size); else g.drawImage(img, 0, 0, c.width, c.height);
+      done(c.toDataURL('image/jpeg', .8));
+    };
+    img.onerror = () => toast('写真を読み込めません', '画像ファイルを確認してください');
+    img.src = fr.result;
+  };
+  fr.readAsDataURL(file);
+}
+const readPhoto = file => imageToJpeg(file, 960, false, url => { photoDraft = url; $('photoPrev').innerHTML = photoPrev(url); });
+const readAvatar = file => imageToJpeg(file, 256, true, url => { S.avatars[S.acct] = url; render(); });
+
+// 主催イベントの管理画面の見出し（タイトル＋編集ボタン＋タブ）
+const MANAGE = [['rooms', '詳細'], ['order', '出走順'], ['record', '記録'], ['hresults', '結果']];
+const manageHead = (cur, e, r) => S.staff
+  ? `${back('staffexit', '', '編集に戻る（試作）')}<h1>${esc(e.title)} <span class="chip off">${esc(r.cls)}</span></h1><p class="sub">記録係として開いています。記録の入力だけできます。</p>`
+  : `${back('tab', 'events', 'イベントへ')}<div class="row" style="flex-wrap:nowrap;margin-top:6px"><h1 class="grow" style="margin:0">${esc(e.title)} <span class="chip off">${esc(r.cls)}</span></h1><button class="btn ghost sm" data-a="go" data-v="edit">編集</button></div>
+    <div style="margin-top:10px">${tabBar(MANAGE, cur, 'go')}</div>`;
+
+// プロフィール。アカウントと他の人で同じ見た目。own=本人（写真の変更・ホスト登録ができる）、hid=ホストならそのID
+function profileBody(p, own, hid) {
+  const tab = !own || S.accTab === 'host' ? 'host' : 'join', h = hid && hosts[hid];
+  const sm = t => `<div class="sub num" style="font-size:11px">${t}</div>`;
+  const av = isPhoto(p.avatar) ? `<img src="${p.avatar}" alt="">` : ic('user', 34);
+  let body;
+  if (tab === 'join') body = `${stat('これまでのイベント参加', p.joined.length, '回', 28)}<h2>過去に参加したイベント</h2>${p.joined.length ? '' : '<p class="sub">まだ参加履歴はありません。</p>'}
+    <div class="list">${p.joined.map(([d, t, dogs]) => `<div class="row"><span class="num sub">${esc(d)}</span><span class="grow">${esc(t)}<br><span class="sub">${dogs.map(esc).join('・')}</span></span></div>`).join('')}</div>`;
+  else if (!h) body = own ? `<div class="card"><strong>ホストになると</strong>
+      <ul class="sub"><li>大会・練習会・セミナーを作り、リンクで募集できます</li><li>参加費を集金し、手数料5％を引いて振り込みます</li><li>出走順・記録・結果をアプリで公開できます</li><li>開催実績とレビューがプロフィールにたまります</li></ul>
+      <div class="sub">登録に必要なもの: 活動エリア／本人確認（氏名・生年月日）／振込先口座／連絡先とキャンセル規定／規約への同意</div>
+      <button class="btn" data-a="go" data-v="hostreg">ホスト登録をはじめる</button></div>` : '';
+  else {
+    const evs = S.events.filter(e => e.hostId === hid && (own || visible(e))).sort((a, b) => a.date.localeCompare(b.date));
+    body = `<div class="grid2" style="grid-template-columns:repeat(3,1fr)">${stat('開催', h.held, '回', 24)}${stat('参加', h.teams, '組', 24)}${stat('評価', h.reviews.length >= 3 ? h.rating : '—', '', 24)}</div>
+      <h2>開催予定のイベント</h2>${evs.length ? '' : '<p class="sub">開催予定のイベントはありません。</p>'}
+      <div class="list">${evs.map(e => `<button class="tap row" data-a="${own ? 'manage' : 'open'}" data-v="${esc(own ? roomsOf(e.id)[0].id : e.id)}"><span class="num sub">${esc(e.date)}</span><span class="grow">${e.priv ? ic('lock', 12) + ' ' : ''}${esc(e.title)}</span><span class="sub">›</span></button>`).join('')}</div>
+      <details class="fold"><summary>過去に開催した大会（${h.held}回）</summary><div class="list">${h.past.map(([d, t, ty, n]) => `<div class="row"><span class="num sub">${esc(d)}</span><span class="grow">${esc(t)}<br><span class="sub">${esc(ty)}</span></span><span class="num">${n}組</span></div>`).join('')}</div>
+        ${h.past.length ? '' : '<p class="sub">まだ開催実績はありません。</p>'}${h.held > h.past.length ? `<p class="sub">ほか${h.held - h.past.length}回の開催実績があります（試作では直近のみ表示）</p>` : ''}</details>
+      <h2>参加者のレビュー</h2>${h.reviews.length ? '' : '<p class="sub">レビューはまだありません。</p>'}
+      <div class="stack">${h.reviews.map(([t, w]) => `<div class="card"><span class="stars">★★★★★</span><span>${esc(t)}</span><span class="sub">${esc(w)}</span></div>`).join('')}</div>
+      ${own ? '<div class="row" style="margin-top:16px"><button class="btn ghost sm" data-a="unhost">ホスト登録を取り消す（試作）</button></div>' : ''}`;
+  }
+  return `<div class="row" style="gap:14px;flex-wrap:nowrap">
+      ${own ? `<label class="avatar" aria-label="プロフィール写真を変更">${av}<span class="cam">${ic('camera', 13)}</span><input id="avatar" type="file" accept="image/jpeg,image/png,image/webp" hidden></label>` : `<div class="avatar" style="cursor:default">${av}</div>`}
+      <div class="grow"><div style="font-size:20px;font-weight:800;line-height:1.3">${esc(p.name)} ${h ? vbadge() : ''}</div>${sm(`ID: ${esc(p.id)}（ダミー）`)}</div></div>
+    ${own ? `<h2>登録している犬</h2>${p.dogs.length ? '' : '<p class="sub">まだ犬を登録していません。</p>'}
+    <div class="list">${p.dogs.map(([n, b, id]) => `<div><strong>${esc(n)}</strong> <span class="sub">${esc(b)}</span>${sm(`犬ID: ${esc(id)}`)}</div>`).join('')}</div>
+    <div style="margin-top:20px">${tabBar([['join', '参加者'], ['host', 'ホスト']], tab, 'acctab')}</div>` : ''}
+    ${body}`;
+}
+
+/* ===== 5. 各画面 ===== */
+const V = {
+  // --- 探す ---
+  search() {
+    const n = [S.region, S.cls, S.filter].filter(x => x !== 'すべて').length;
+    return `<div class="row" style="justify-content:space-between;flex-wrap:nowrap"><h1 style="margin:0">大会をさがそう</h1><button class="btn sm" data-a="startcreate">＋ 大会を作る</button></div>
+      <p class="sub">ノーズワークの大会・練習会・体験会・セミナーが見つかります</p>
+      <input id="q" type="search" placeholder="大会名・場所・主催者で検索" aria-label="大会名で検索" value="${esc(S.q)}" style="margin-top:8px">
+      <details class="filters" ${n ? 'open' : ''}><summary>絞り込み${n ? `（${n}）` : ''}</summary>
+        <div class="grid2">
+          <label>地域<select id="region"><option>すべて</option>${Object.keys(REGIONS).map(r => `<optgroup label="${esc(r)}"><option value="${esc(r)}" ${S.region === r ? 'selected' : ''}>${esc(r)}全体</option>${REGIONS[r].split(' ').map(p => `<option ${S.region === p ? 'selected' : ''}>${esc(p)}</option>`).join('')}</optgroup>`).join('')}<option ${S.region === 'オンライン' ? 'selected' : ''}>オンライン</option></select></label>
+          <label>クラス<select id="fcls">${['すべて', ...CLASSES].map(c => `<option ${S.cls === c ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></label>
+          <label style="grid-column:1/-1">種類<select id="ftype">${['すべて', ...TYPES].map(t => `<option ${S.filter === t ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
+        </div></details>
+      <div class="stack" id="evList">${evList()}</div>
+      <p class="sub" style="margin-top:14px">限定公開の大会はここに出ません。主催者から届いたリンクを開くと参加できます。</p>`;
+  },
+
+  // --- 大会ページ（申込前） ---
+  event() {
+    const e = ev(S.eventId), h = hosts[e.hostId], rs = roomsOf(e.id), lesson = rs.every(isLesson);
+    if (S.flow) return V.flow(e, S.flow);
+    return `<div class="ecard hero">${cardBg(e)}<span class="fade"></span>
+        <span class="tl gpill">${esc(e.type)}</span><span class="tr gpill">${e.priv ? ic('lock', 12) + '限定公開' : '公開'}</span>
+        <span class="info"><strong>${esc(e.title)}</strong><span class="num">${esc(e.date)}・${esc(e.place)}</span></span></div>
+      <button class="card tap" style="margin-top:14px" data-a="host" data-v="${esc(e.hostId)}"><div class="row" style="flex-wrap:nowrap"><span class="mav lg">${miniAv(e.hostId)}</span><span class="grow"><strong>${esc(person(e.hostId).name)}</strong> ${vbadge()}<br><span class="sub">開催 ${h.held}回・${rate(h)}</span></span><span class="sub">プロフィール ›</span></div></button>
+      ${S.isHost && e.hostId === ME.hid ? `<div class="row" style="margin-top:10px"><button class="btn ghost sm" data-a="manage" data-v="${esc(rs[0].id)}">ホストとして管理する</button></div>` : ''}
+      <h2>${lesson ? 'お申し込み' : 'クラスをえらんで申し込む'}</h2>
+      <div class="stack">${[...rs].sort((a, b) => (b.id === S.roomId) - (a.id === S.roomId)).map(r => {
+        const n = entriesOf(r.id).length, full = n >= r.cap;
+        return `<div class="card"><div class="row"><strong class="grow" style="font-size:18px">${esc(r.cls)}</strong>${r.id === S.roomId && rs.length > 1 ? '<span class="chip">選んだクラス</span>' : ''}<span class="chip ${isLesson(r) || !r.official ? '' : 'off'}">${isLesson(r) ? 'イベント' : r.official ? '公式' : '非公式'}</span></div>
+          <div class="sub">${esc(elLine(r))}</div>
+          <div class="row"><span class="grow">定員 <span class="num">${n}/${r.cap}</span>組</span><strong class="num">${yen(r.fee)}</strong></div>
+          ${isLesson(r) ? '' : r.orderFixed ? `<button class="btn ghost sm" data-a="entrants" data-v="${esc(r.id)}">参加者を見る（${n}組）</button>` : '<div class="sub">参加者は、出走順が確定すると見られます。</div>'}
+          <button class="btn" data-a="apply" data-v="${esc(r.id)}" ${full ? 'disabled' : ''}>${full ? '満員です' : isLesson(r) ? `この${r.cls === 'セミナー' ? 'セミナー' : '体験会'}に申し込む` : 'このクラスに申し込む'}</button></div>`; }).join('')}</div>
+      <h2>${lesson ? '当日について' : '当日の流れ'}</h2>
+      <p class="sub">集合時間は${esc(e.meet || '未定')}です。${lesson ? '持ち物などの案内は、申込後に主催者から届きます。' : '出走順は主催者が確定すると、参加する大会の詳細で見られます。出番が近づくとアプリに通知が届きます。'}</p>`;
+  },
+
+  // --- 申込の流れ（同意 → 支払い → 完了） ---
+  flow(e, f) {
+    const r = room(f.roomId), L = isLesson(r), sem = r.cls === 'セミナー', freeDogs = ME.dogs.filter(d => !entriesOf(r.id).some(x => x.handler === ME.handler && x.dog === d[0])), card = c => `<div class="card" style="margin-top:14px">${c}</div>`;
+    const head = `${back('cancel', '', L ? 'イベントページへ' : '大会ページへ')}<h1>${esc(e.title)}</h1><p class="sub">${esc(r.cls)}・${sem ? '' : `${esc(f.dog)}（${esc(breedOf(f.dog))}）／`}${esc(ME.handler)}</p>
+      <div class="steps">${['同意', '支払い', '完了'].map((s, i) => `<span class="${i <= f.step ? 'on' : ''}">${i + 1}. ${s}</span>`).join('')}</div>`;
+    if (f.step === 0) return head + card(`<strong>${L ? 'お申し込み内容の確認' : '参加にあたっての同意'}</strong>
+      ${L ? `<div class="sub num">${esc(e.date)}・${esc(e.place)}</div>
+        <ul class="sub">${sem ? '<li>日時・場所（オンラインの場合は参加方法）を確認しました</li>' : `<li>${esc(f.dog)}のワクチン接種と当日の体調に問題がないことを確認しました</li><li>主催者の指示に従います</li>`}<li>キャンセル・返金は主催者の規定に従います</li></ul>`
+      : `<ul class="sub"><li>大会のルールと主催者の指示に従います</li><li>ヒート中の犬は申し出て、出走順は最後になります</li>${r.official ? '<li>公式競技会は、1つの競技に出られるのはハンドラー1人につき犬1頭です</li>' : ''}<li>キャンセル・返金は主催者の規定に従います</li></ul>
+        <label class="agree"><input type="checkbox" id="heat"> 出場する犬は当日ヒート中の予定</label>`}
+      ${!sem && freeDogs.length > 1 ? `<label>出場する犬<select id="fdog">${freeDogs.map(([n, b]) => `<option value="${esc(n)}" ${n === f.dog ? 'selected' : ''}>${esc(n)}（${esc(b)}）</option>`).join('')}</select></label>` : ''}
+      <label class="agree"><input type="checkbox" id="agree"> 上記に同意します</label>
+      <p id="err" class="bad" hidden></p><button class="btn" data-a="agree">同意して支払いへ</button>`);
+    if (f.step === 1) return head + card(`<strong>お支払い（ダミー）</strong>
+      <table class="money"><tr><td>参加費</td><td class="num">${yen(r.fee)}</td></tr>
+        <tr><td class="sub">うちアプリ手数料（決済込み${FEE_RATE * 100}％）</td><td class="num sub">${yen(fee(r.fee))}</td></tr>
+        <tr><td class="sub">主催者の受け取り</td><td class="num sub">${yen(r.fee - fee(r.fee))}</td></tr>
+        <tr class="total"><td>お支払い合計</td><td class="num">${yen(r.fee)}</td></tr></table>
+      <p class="sub">手数料は参加費の内側から引かれ、参加者の負担は増えません。試作のためカード入力はなく、実際の請求もありません。</p>
+      <button class="btn" data-a="pay">${yen(r.fee)}を支払う（ダミー）</button>`);
+    return head + card(`<div class="row"><span>${dogFace(40)}</span><strong class="ok grow">${L ? 'お申し込みが完了しました！' : '参加が完了しました！'}</strong></div>
+      ${L ? `<div class="sub num">${esc(e.date)}・${esc(e.place)}</div><p class="sub">持ち物や集合時間などのお知らせは、主催者からアプリに届きます。</p>`
+          : '<p class="sub">出走順は主催者が確定すると、「イベント」の大会詳細に表示されます。競技が始まると、あと3頭と、次が出番のときに通知が届きます。</p>'}
+      <button class="btn" data-a="go" data-v="myevents">イベントを見る</button>`);
+  },
+
+  // --- イベント（参加する／主催する） ---
+  myevents() {
+    const asHost = S.evTab === 'host', seg = tabBar([['join', '参加するイベント'], ['host', '主催するイベント']], asHost ? 'host' : 'join', 'evtab');
+    if (!asHost) {
+      const mine = S.entries.filter(x => x.handler === ME.handler).map(en => { const r = room(en.roomId); return { en, r, e: ev(r.eventId) }; }).sort((a, b) => a.e.date.localeCompare(b.e.date));
+      return `<h1>イベント</h1>${seg}
+        ${mine.length ? `<div class="stack">${mine.map(({ en, r, e }) => { const ph = roomPhase(r), st = ph === 'live' && turnState(r, en);
+          return `<div class="card link" ${st && st.c === 'heat' ? 'style="border-color:var(--primary);box-shadow:0 3px 0 var(--primary)"' : ''}>
+            <div class="row"><span class="chip off">${esc(r.cls)}</span><span class="sub num grow">${esc(e.date)}</span>${statusChip(r, en, ph)}</div>
+            <strong style="font-size:17px">${esc(e.title)}</strong><div class="sub">${esc(e.place)}${en.dog ? `・${esc(en.dog)}` : ''}</div>
+            <button class="cover" data-a="mydetail" data-v="${esc(en.id)}" aria-label="${esc(e.title)}の詳細を開く"></button></div>`; }).join('')}</div>`
+          : empty('まだ参加予定のイベントはありません。', '<button class="btn sm" data-a="tab" data-v="search">イベントを探す</button>')}`;
+    }
+    if (!S.isHost) return `<h1>イベント</h1>${seg}${empty('ホストになると、ここに主催するイベントが出ます。', '<button class="btn" data-a="go" data-v="hostreg">ホスト登録をはじめる</button>')}`;
+    const blocks = S.events.filter(e => e.hostId === ME.hid).sort((a, b) => a.date.localeCompare(b.date)).flatMap(e => roomsOf(e.id).map(r => ({ e, r })));
+    return `<h1>イベント</h1>${seg}
+      <button class="btn" style="width:100%" data-a="startcreate">＋ 大会を作る</button>
+      <h2>開催予定</h2>${blocks.length ? '' : empty('まだ主催しているイベントはありません。「＋ 大会を作る」から作れます。')}
+      <div class="stack">${blocks.map(({ e, r }) => `<div class="card link"><div class="row"><span class="chip off">${esc(r.cls)}</span><span class="sub num grow">${esc(e.date)}</span>${e.priv ? `<span class="chip">${ic('lock', 11)} プライベート</span>` : ''}</div>
+          <strong style="font-size:17px">${esc(e.title)}</strong>
+          <div class="row"><span class="sub">申込 <span class="num">${entriesOf(r.id).length}/${r.cap}</span>組</span>${isLesson(r) ? '' : `<span class="chip ${r.orderFixed ? 'off' : ''}">出走順 ${r.orderFixed ? '確定' : '未確定'}</span>${r.resultsFixed ? '<span class="chip off">結果 確定</span>' : ''}`}</div>
+          <button class="cover" data-a="manage" data-v="${esc(r.id)}" aria-label="${esc(e.title)} ${esc(r.cls)}を管理"></button></div>`).join('')}</div>
+      <p class="sub" style="margin-top:12px">過去に開催した大会は、アカウントの「ホスト」で見られます。</p>`;
+  },
+
+  // --- 参加する大会の詳細（大会情報／出走順／結果） ---
+  detail() {
+    const en = entry(S.detailEntry), r = room(en.roomId), e = ev(r.eventId), L = isLesson(r), tab = L ? 'info' : S.dtab || 'info', note = (t, m) => `<div class="card" style="margin-top:10px"><strong>${t}</strong><div class="sub">${m}</div></div>`;
+    let body;
+    if (tab === 'info') body = `<div class="card" style="margin-top:10px">${kv('日付', `<span class="num">${esc(e.date)}</span>`)}${kv('集合時間', `<span class="num">${esc(e.meet || '未定')}</span>`)}${kv('場所', esc(e.place))}
+        ${kv('クラス', esc(r.cls) + (elLine(r) ? `・${esc(elStr(r))}` : ''))}${en.dog ? kv('出場する犬', `${esc(en.dog)}（${esc(en.breed)}）`) : ''}${kv('参加費', `${yen(r.fee)}（支払い済み）`)}${kv('主催', hostChip(e.hostId, true))}</div>
+      <p class="sub" style="margin-top:10px">${L ? '持ち物などの案内は、主催者からアプリに届きます。' : '出走順は主催者が確定すると「出走順」タブに、結果は確定後に「結果」タブに表示されます。'}</p>`;
+    else if (tab === 'order') {
+      if (!r.orderFixed) body = note('出走順は未確定です', '主催者が確定すると、ここに表示されます。確定までは、参加者は表示されません。');
+      else {
+        const el = curEl(r), ord = S.order[r.id], live = roomPhase(r) === 'live', ni = nextIndex(r.id, el), st = live && turnState(r, en);
+        body = `<div class="card" style="margin-top:10px"><div class="row"><div class="grow"><div class="sub">${esc(en.dog)}の出走順</div><div class="big">${ord.indexOf(en.id) + 1}<span class="sub"> / ${ord.length}番</span></div></div>${st ? `<span class="chip ${st.c}" style="font-size:13px">${st.t}</span>` : ''}</div></div>
+          ${elPicker(r, el)}<h2>出走順</h2><div class="list">${ord.map((id, i) => { const x = entry(id), done = resOf(r.id, el)[id];
+            return `<div class="row ${id === en.id ? 'me' : ''}"><span class="pos">${i + 1}</span><span class="grow">${esc(x.dog)} <span class="sub">${esc(x.handler)}</span></span>${x.heat ? '<span class="chip heat">ヒート</span>' : ''}<span class="sub">${done ? '済' : live && i === ni ? '走行中' : ''}</span></div>`; }).join('')}</div>`;
+      }
+    } else if (!r.resultsFixed) body = note('結果は未確定です', '主催者が確定すると、ここにみんなの記録が表示されます。');
+    else { const el = curEl(r); body = `${elPicker(r, el)}${resultTable(resOf(r.id, el))}`; }
+    return `${back('tab', 'events', 'イベントへ')}<h1>${esc(e.title)} <span class="chip off">${esc(r.cls)}</span></h1>
+      ${L ? '' : tabBar([['info', '大会情報'], ['order', '出走順'], ['result', '結果']], tab, 'dtab')}${body}`;
+  },
+
+  // --- 犬の成績（課目ごとのタイム推移） ---
+  dog() {
+    const d = ME.dogs.some(x => x[0] === S.dog) ? S.dog : ME.dog, rows = history.filter(h => h.dog === d).map(h => ({ ...h }));
+    S.entries.filter(en => en.handler === ME.handler && en.dog === d).forEach(en => room(en.roomId).elements.forEach(el => { // 今回の大会の結果も加える
+      const rs = resOf(en.roomId, el), r = rs[en.id];
+      if (!r || r.st !== 'ok') return;
+      rows.push({ date: ev(room(en.roomId).eventId).date.slice(0, 7), title: ev(room(en.roomId).eventId).title, element: el, score: r.score, t: r.t, now: true,
+        rank: rank(Object.entries(rs).map(([id, rr]) => ({ e: entry(id), r: rr }))).find(x => x.e.id === en.id).rank });
+    }));
+    const chart = rs => {
+      const W = 320, H = 110, PL = 48, ts = rs.map(r => r.t), lo = Math.min(...ts) - 5000, hi = Math.max(...ts) + 5000;
+      const x = i => PL + i * (W - PL - 12) / Math.max(rs.length - 1, 1), y = t => 16 + (t - lo) / (hi - lo) * (H - 32);
+      return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="タイムの推移">
+        ${[...new Set([Math.min(...ts), Math.max(...ts)])].map(t => `<line x1="${PL}" x2="${W - 12}" y1="${y(t)}" y2="${y(t)}" stroke="#f1dfbf" stroke-width="2"/><text x="0" y="${y(t) + 3}">${fmtTime(t)}</text>`).join('')}
+        <polyline points="${rs.map((r, i) => `${x(i)},${y(r.t)}`).join(' ')}" fill="none" stroke="#ff7a3d" stroke-width="3" stroke-linejoin="round"/>
+        ${rs.map((r, i) => `<circle cx="${x(i)}" cy="${y(r.t)}" r="${r.now ? 6 : 4.5}" fill="${r.now ? '#ffc83d' : '#ff7a3d'}" stroke="#fff" stroke-width="2"/>`).join('')}</svg>`;
+    };
+    const by = ELEMENTS.map(el => [el, rows.filter(r => r.element.replace(/\d+$/, '') === el).sort((a, b) => a.date.localeCompare(b.date))]);
+    return `<h1>犬の成績</h1>
+      <div class="row" style="margin-top:6px">${ME.dogs.map(([n]) => `<button class="btn sm ${n === d ? '' : 'ghost'}" data-a="dog" data-v="${esc(n)}">${esc(n)}</button>`).join('')}</div>
+      <p class="sub" style="margin:8px 0">${esc(d)}・${esc(breedOf(d))}・犬ID（マイクロチップ）で記録をつなげます</p>
+      <div class="grid2">${stat('大会参加', new Set(rows.map(r => r.date + r.title)).size, '回')}${stat('記録', rows.length, '件')}</div>
+      ${by.filter(([, rs]) => rs.length).map(([el, rs]) => `<h2>${esc(el)}</h2>
+        <div class="card"><div class="sub">タイムの推移（上ほど速い）・ベスト <span class="num">${fmtTime(Math.min(...rs.map(r => r.t)))}</span></div>${chart(rs)}</div>
+        <div style="overflow-x:auto;margin-top:8px"><table><tr><th>年月</th><th>大会</th><th>得点</th><th>タイム</th><th>順位</th></tr>
+        ${rs.slice().reverse().map(r => `<tr><td class="num">${esc(r.date)}</td><td>${esc(r.title)}</td><td class="num">${r.score}</td><td class="num">${fmtTime(r.t)}</td><td class="num">${r.rank}位</td></tr>`).join('')}</table></div>`).join('')}
+      <p class="sub" style="margin-top:12px">記録なしの課目: ${by.filter(([, rs]) => !rs.length).map(([el]) => esc(el)).join('、') || 'なし'}${d === ME.dog && !rows.some(r => r.now) ? '。ファンマッチの記録が入ると、今日の結果が加わります' : ''}</p>`;
+  },
+
+  // --- アカウント／プロフィール ---
+  account() {
+    return profileBody(person(ME.hid), true, S.isHost ? ME.hid : null) + `<h2>試作：アカウントの切り替え</h2>
+      <div class="stack">${Object.values(ACC).map(a => { const now = a.key === S.acct, host = now ? S.isHost : S.hostOf[a.key];
+        return `<button class="card tap" style="${now ? 'border-color:var(--primary);box-shadow:0 3px 0 var(--primary)' : ''}" data-a="switch" data-v="${a.key}"><div class="row"><span class="grow"><strong>${esc(a.handler)}</strong><br><span class="sub">${host ? 'ホスト登録済み' : '参加者のみ'}・犬${a.dogs.length}頭・${esc(a.note)}</span></span>${now ? '<span class="chip off">使用中</span>' : ''}</div></button>`; }).join('')}</div>
+      <button class="btn ghost sm" style="margin-top:14px" data-a="reset">データを最初の状態に戻す</button>`;
+  },
+  profile() { return back('go', S.profileBack || 'event') + profileBody(person(S.profileOf), false, S.profileOf); },
+
+  hostreg() {
+    const st = S.reg?.step ?? 0;
+    const head = `${back('regback', '', st ? '前へ' : 'アカウントへ')}<h1>ホスト登録</h1>${S.reg?.after ? '<p class="sub">大会を作るには、先にホスト登録が必要です。登録が終わると作成画面に進みます。</p>' : ''}
+      <div class="steps">${['活動内容', '本人確認・口座', '表記と同意'].map((t, i) => `<span class="${i <= st ? 'on' : ''}">${i + 1}. ${t}</span>`).join('')}</div>`;
+    const form = body => `<form class="card" id="regForm" style="margin-top:14px" novalidate>${body}<p id="regErr" class="bad" hidden></p><button class="btn">${st === 2 ? 'ホストとして登録する' : '次へ'}</button></form>`;
+    if (st === 0) return head + form(`<div class="grid2"><label>活動エリア<select id="ha">${PLACES.map(p => `<option ${p === '東京都' ? 'selected' : ''}>${p}</option>`).join('')}</select></label>
+        <label>種別<select id="hk"><option>個人</option><option>個人事業主</option><option>法人・団体</option></select></label></div>
+      <label>公認資格・会員番号（任意）<input id="hl" maxlength="30" placeholder="例：公認インストラクター"></label>`);
+    if (st === 1) return head + form(`<p class="sub">本番では決済会社の画面で本人確認と口座登録を行い、口座番号はこのアプリに保存しません。試作では実在の番号を入力しないでください（入力値は保存されません）。</p>
+      <div class="grid2"><label>代表者の氏名<input id="rn" maxlength="30" autocomplete="off"></label><label>生年月日<input id="rb" type="date"></label></div>
+      <label>銀行名<input id="bn" maxlength="30" placeholder="例：サンプル銀行"></label>
+      <div class="grid2"><label>支店名<input id="bb" maxlength="30"></label><label>口座種別<select id="bt"><option>普通</option><option>当座</option></select></label></div>
+      <div class="grid2"><label>口座番号（7桁）<input id="bk" inputmode="numeric" maxlength="7" autocomplete="off" placeholder="0000000"></label><label>名義（カタカナ）<input id="bm" maxlength="40" autocomplete="off"></label></div>`);
+    return head + form(`<strong>特定商取引法に基づく表記（大会ページに表示）</strong>
+      <label>連絡先メール<input id="em" type="email" maxlength="60" placeholder="info@example.test"></label>
+      <label>キャンセル・返金規定<select id="cp"><option>参加日の7日前まで全額返金、以降は返金なし</option><option>3日前まで50％返金、以降は返金なし</option><option>返金なし（主催者の都合による中止を除く）</option></select></label>
+      <label class="agree"><input type="checkbox" id="t1"> 利用規約に同意します</label>
+      <label class="agree"><input type="checkbox" id="t2"> 参加費から手数料5％（決済込み）が引かれることに同意します（最初の1大会は0％）</label>`);
+  },
+
+  // --- 通知（ヘッダーのベル） ---
+  notices() {
+    const mine = S.inbox.filter(n => n.to === ME.handler);
+    return `${back('go', S.noticeBack || 'search')}<h1>通知</h1>
+      ${mine.length ? `<div class="list">${mine.map(n => { const link = n.entryId && entry(n.entryId)?.handler === ME.handler, isNew = S.newIds?.includes(n.id);
+        return `<${link ? 'button' : 'div'} class="${link ? 'tap ' : ''}row ${isNew ? 'me' : ''}" ${link ? `data-a="mydetail" data-v="${esc(n.entryId)}"` : ''}><span class="grow"><strong>${esc(n.title)}</strong>${isNew ? ' <span class="chip off">新着</span>' : ''}<br><span class="sub">${esc(n.body)}</span></span><span class="sub num">${esc(n.at)}</span></${link ? 'button' : 'div'}>`; }).join('')}</div>`
+        : empty('まだ通知はありません。出走順の確定、呼び出し、結果の確定などをここでお知らせします。')}`;
+  },
+
+  // --- 参加者の一覧とプロフィール ---
+  entrants() {
+    const r = room(S.entrantRoom), e = ev(r.eventId), top = back('go', S.entrantFrom || 'event');
+    if (isLesson(r) || !r.orderFixed) return `${top}<h1>参加者一覧</h1><p class="sub">参加者は、出走順が確定すると見られます。</p>`;
+    const ord = S.order[r.id];
+    return `${top}<h1>参加者一覧</h1><p class="sub">${esc(e.title)}・${esc(r.cls)}・<span class="num">${ord.length}/${r.cap}</span>組</p>
+      <div class="list">${ord.map(id => { const en = entry(id);
+        return `<button class="tap row ${en.handler === ME.handler ? 'me' : ''}" data-a="eprofile" data-v="${esc(id)}"><span class="grow"><strong>${esc(en.dog)}</strong> <span class="sub">${esc(en.breed)}</span><br><span class="sub">${esc(en.handler)}</span>${hb(en)}</span>${en.heat ? '<span class="chip heat">ヒート</span>' : ''}<span class="sub">›</span></button>`; }).join('')}</div>`;
+  },
+  eprofile() { // 参加者（犬とハンドラー）の情報。連絡先やIDは、その大会のホストにだけ見える
+    const en = entry(S.entryProfile), r = room(en.roomId), e = ev(r.eventId), m = meta(en), host = S.isHost && e.hostId === ME.hid, L = isLesson(r);
+    return `${back('go', S.eprofileBack || 'entrants')}<h1>${esc(en.dog || en.handler)}</h1>
+      <p class="sub">${en.dog ? `${esc(en.breed)}・${m.age}歳・ハンドラー ` : 'ハンドラー '}${esc(en.handler)}${hb(en)}</p>
+      <div class="grid2">${stat('これまでの参加', m.count, '回')}${L ? '' : stat('この大会の出走順', S.order[r.id].indexOf(en.id) + 1, '番')}</div>
+      <h2>${L ? 'このイベント' : 'この大会'}（${esc(e.title)}・${esc(r.cls)}）</h2>
+      ${L ? `<p class="sub num">${esc(e.date)}・${esc(e.place)}</p>` : `<div class="list">${r.elements.map(el => `<div class="row"><span class="grow">${esc(el)}</span><span class="num sub">${recText(resOf(r.id, el)[en.id]) || '未出走'}</span></div>`).join('')}</div>`}
+      <h2>${host ? '主催者だけに見える情報（ダミー）' : '連絡先などは非表示'}</h2>
+      ${host ? `<div class="card">${en.dog ? kv('犬ID', `<span class="num">${esc(m.chip)}</span>`) : ''}${kv('ハンドラーID', `<span class="num">${esc(m.member)}</span>`)}${kv('連絡先', `<span class="num">${esc(m.mail)}</span>`)}</div>`
+        : '<p class="sub">連絡先やIDは、本人とこのイベントの主催者にだけ表示されます。</p>'}`;
+  },
+
+  // --- 主催イベントの管理（詳細／出走順／記録／結果／編集） ---
+  rooms() { return S.creating ? createView(S.creating) : detailTab(); },
+  edit() { return editView(); },
+  order() {
+    const e = hostEv(), rid = curRoom(e), r = room(rid), ord = S.order[rid], head = manageHead('order', e, r);
+    if (isLesson(r)) return head + lessonCard();
+    const dups = dupHandlers(rid), fh = ord.findIndex(id => entry(id).heat), heatOk = fh < 0 || ord.slice(fh).every(id => entry(id).heat), fixed = r.orderFixed;
+    return `${head}<div class="card" style="margin-top:10px">
+        <div class="${heatOk ? 'ok' : 'warn'}">${heatOk ? '✓ ヒート中の犬は最後です' : '! ヒート中の犬が最後になっていません'}</div>
+        ${r.official ? `<div class="${dups.length ? 'bad' : 'ok'}">${dups.length ? '! 1人で2頭以上エントリー: ' + dups.map(esc).join('、') : '✓ 公式競技会の決まり（1人1頭）を満たしています'}</div>` : ''}
+        ${fixed ? '<div class="ok">✓ 出走順は確定済みです（参加者に公開中）</div><button class="btn ghost sm" data-a="unfixorder">確定を解除して並べ替える</button>'
+          : '<button class="btn ghost" data-a="shuffle">ランダムに並べる（ヒート中は最後）</button><button class="btn" data-a="fixorder">出走順を確定して公開</button><div class="sub">確定するまで、参加者には出走順も参加者も表示されません。</div>'}</div>
+      <h2>${ord.length}頭${fixed ? '' : '（つかんで上下に動かせます）'}</h2>
+      <div class="list">${ord.map((id, i) => { const en = entry(id);
+        return `<div class="row ${en.handler === ME.handler ? 'me' : ''}" ${fixed ? '' : `data-id="${esc(id)}"`}><span class="pos">${i + 1}</span><span class="grow">${esc(en.dog)} <span class="sub">${esc(en.handler)}</span></span>${en.heat ? '<span class="chip heat">ヒート</span>' : ''}
+          ${fixed ? '' : `<button class="btn ghost grip" data-grip aria-label="${esc(en.dog)}を移動（ドラッグ、または上下キー）">⋮⋮</button>`}</div>`; }).join('')}</div>`;
+  },
+  record() {
+    const e = hostEv(), rid = curRoom(e), r = room(rid), head = manageHead('record', e, r);
+    if (isLesson(r)) return head + lessonCard();
+    if (!r.orderFixed) return `${head}<div class="card" style="margin-top:10px"><strong>先に出走順を確定してください</strong><div class="sub">出走順が確定すると、記録を入力できます。</div><button class="btn" data-a="go" data-v="order">出走順へ</button></div>`;
+    const el = curEl(r), ord = S.order[rid], res = resOf(rid, el), cur = S.editing && ord.includes(S.editing) ? S.editing : ord[nextIndex(rid, el)];
+    const ce = cur && entry(cur), cr = cur && res[cur], cs = cur ? callState(rid, el, cur) : {}, t = cr && cr.st === 'ok' ? fmtTime(cr.t).replace(/\D/g, '').replace(/^0+/, '') : '';
+    return `${head}${elPicker(r, el)}
+      ${ce ? `<form class="card" id="recForm" style="margin-top:10px" novalidate>
+        <div class="row" style="flex-wrap:nowrap"><span class="grow"><span class="sub">${ord.indexOf(cur) + 1}番</span>${ce.heat ? ' <span class="chip heat">ヒート</span>' : ''}<br><strong style="font-size:22px">${esc(ce.dog)}</strong> <span class="sub">${esc(ce.handler)}</span></span>
+          <button type="button" class="btn sm" data-a="call" ${cs.can ? '' : 'disabled'}>${ic('megaphone', 16)} 呼び出す</button></div>
+        <div class="sub">${cs.called ? '✓ 呼び出し済みです' : cs.can ? '押すと、この犬の飼い主に通知が届きます' : '「記録して次へ」を押すと、次の犬を呼び出せます'}</div>
+        <label>タイム（数字だけ。12345 → 1:23.45）<input id="time" inputmode="numeric" autocomplete="off" value="${esc(t)}" placeholder="12345"></label>
+        <div class="num" id="timePreview" style="font-size:26px;font-weight:800">${t ? fmtTime(parseTime(t)) : '—:—.—'}</div>
+        <div class="grid2"><label>得点<input id="score" type="number" inputmode="numeric" min="0" max="10" value="${cr ? cr.score : 3}"></label>
+          <label>フォルト<input id="faults" type="number" inputmode="numeric" min="0" max="10" value="${cr ? cr.faults : 0}"></label></div>
+        <div class="row">${[['ok', '完走'], ['dq', '失格'], ['abort', '中止']].map(([v, l]) => `<label class="agree"><input type="radio" name="st" value="${v}" ${(cr ? cr.st : 'ok') === v ? 'checked' : ''}> ${l}</label>`).join('')}</div>
+        <p id="recErr" class="bad" hidden></p><button class="btn">記録して次へ</button></form>`
+      : `<div class="card" style="margin-top:10px"><strong class="ok">全頭の記録が終わりました！</strong>${S.staff ? '' : '<button class="btn" data-a="go" data-v="hresults">結果を見る</button>'}</div>`}
+      <h2>出走順（タップで修正）</h2>
+      <div class="list">${ord.map((id, i) => `<button class="tap row ${id === cur ? 'me' : ''}" data-a="edit" data-v="${esc(id)}"><span class="pos">${i + 1}</span><span class="grow">${esc(entry(id).dog)}</span><span class="num sub">${recText(res[id])}</span></button>`).join('')}</div>`;
+  },
+  hresults() {
+    const e = hostEv(), rid = curRoom(e), r = room(rid), head = manageHead('hresults', e, r);
+    if (isLesson(r)) return head + lessonCard();
+    const el = curEl(r), done = roomPhase(r) === 'after';
+    return `${head}${elPicker(r, el)}<div class="card" style="margin-top:10px">${r.resultsFixed ? '<div class="ok">✓ 結果は確定済みです（参加者に公開中）</div><button class="btn ghost sm" data-a="unfixresults">確定を解除</button>'
+        : `<div class="sub">記録を入れるたびに、下の順位が更新されます。確定すると参加者にも公開されます。</div><button class="btn" data-a="fixresults" ${done ? '' : 'disabled'}>結果を確定して公開</button>${done ? '' : '<div class="sub">全頭・全課目の記録が終わると確定できます。</div>'}`}</div>
+      <p class="sub" style="margin:10px 0">得点 → フォルト → タイムの順で比べ、すべて同じなら同順位です。</p>${resultTable(resOf(rid, el))}`;
+  },
+};
+
+function detailTab() { // 管理: 詳細（情報＋参加者一覧の表）
+  const e = hostEv(), r = room(curRoom(e)), L = isLesson(r), ord = L ? entriesOf(r.id).map(x => x.id) : S.order[r.id];
+  return `${manageHead('rooms', e, r)}
+    <div class="row" style="margin-top:4px"><span class="chip ${e.priv ? '' : 'off'}">${e.priv ? 'プライベート' : '公開'}</span>${L ? '' : `<span class="chip ${r.orderFixed ? 'off' : ''}">出走順 ${r.orderFixed ? '確定済み' : '未確定'}</span><span class="chip ${r.resultsFixed ? 'off' : ''}">結果 ${r.resultsFixed ? '確定済み' : '未確定'}</span>`}</div>
+    <div class="card" style="margin-top:10px">${kv('日付', `<span class="num">${esc(e.date)}</span>`)}${kv('集合時間', `<span class="num">${esc(e.meet || '未定')}</span>`)}${kv('場所', esc(e.place))}
+      ${elLine(r) ? kv('課目', esc(elStr(r))) : ''}${kv('定員', `<span class="num">${ord.length}/${r.cap}</span>組`)}${kv('参加費', `${yen(r.fee)}（手取り${yen(r.fee - fee(r.fee))}/組）`)}</div>
+    <h2>参加者一覧（${ord.length}組）</h2>
+    ${ord.length ? `<div style="overflow-x:auto"><table><tr><th>順</th><th>犬</th><th>ハンドラー</th><th></th></tr>${ord.map((id, i) => { const en = entry(id);
+      return `<tr data-a="eprofile" data-v="${esc(id)}"><td class="num">${i + 1}</td><td>${esc(en.dog || '—')}${en.breed ? `<br><span class="sub">${esc(en.breed)}</span>` : ''}</td><td>${esc(en.handler)}</td><td>${en.heat ? '<span class="chip heat">ヒート</span>' : ''}</td></tr>`; }).join('')}</table></div>` : '<p class="sub">まだ参加者がいません。</p>'}`;
+}
+
+const ROLES = [['staff', '記録係', '記録の入力だけできます'], ['editor', '共同ホスト', '編集・出走順・記録・結果まで操作できます']];
+function editView() { // 管理: 編集（大会の設定・公開範囲・招待リンク）
+  const e = hostEv(), r = room(curRoom(e)), n = entriesOf(r.id).length, locked = n > 0, free = CLASSES.filter(c => !roomsOf(e.id).some(x => x.cls === c)), url = c => `https://example.test/join/${c}`;
+  return `${back('go', 'rooms', '詳細へ')}<h1>編集</h1><p class="sub">${esc(e.title)}・${esc(r.cls)}</p>
+    <form class="card" id="editForm" style="margin-top:10px" novalidate>
+      <p class="sub">場所・集合時間・写真・公開範囲は大会全体（すべてのクラス）に反映されます。</p>
+      ${placeFields(e, '')}
+      <label>集合時間<input id="meet" type="time" value="${esc(e.meet || '')}"></label>
+      ${photoField(e, '')}
+      ${r.cls === 'セミナー' ? '' : elEditor(r.elements)}
+      <label>定員（組）<input id="cap" type="number" inputmode="numeric" min="${Math.max(n, 1)}" max="50" value="${r.cap}"></label>
+      <label>参加費（円）<input id="feeIn" type="number" inputmode="numeric" min="0" max="50000" step="500" value="${r.fee}" ${locked ? 'disabled' : ''}></label>
+      <p class="sub ${locked ? 'warn' : ''}">${locked ? `${n}組が申し込み済みのため、参加費は変更できません（申し込んだ人との公平のため）。` : 'まだ申込がないので変更できます。最初の申込が入ると固定されます。'}</p>
+      <label class="agree"><input type="checkbox" id="priv" ${e.priv ? 'checked' : ''}> プライベートにする（大会検索に出さず、リンクを知っている人だけ）</label>
+      <p class="sub" id="feeNote"></p><p id="editErr" class="bad" hidden></p><button class="btn">変更を保存</button></form>
+    <h2>リンク</h2>
+    <div class="card"><strong>参加者用</strong><div class="sub num" style="word-break:break-all">https://example.test/e/${esc(e.id)}（ダミー）</div>
+      <div class="row"><button class="btn ghost sm" data-copy="https://example.test/e/${esc(e.id)}">コピー</button><button class="btn ghost sm" data-a="open" data-v="${esc(e.id)}" data-d="${esc(r.id)}">参加者として見る</button></div></div>
+    ${ROLES.map(([k, l, d]) => `<div class="card" style="margin-top:12px"><div class="row"><strong class="grow">${l}を招待</strong><button class="btn sm" data-a="newlink" data-v="${k}">＋ リンクを作る</button></div><div class="sub">${d}</div>
+      ${(r.links || []).filter(x => x.role === k).map(x => `<div class="row"><span class="num sub grow" style="word-break:break-all">${esc(url(x.code))}</span><button class="btn ghost sm" data-copy="${esc(url(x.code))}">コピー</button>${k === 'staff' ? '<button class="btn ghost sm" data-a="staffopen">記録係として開く（試作）</button>' : ''}<button class="btn ghost sm" data-a="rmlink" data-v="${esc(x.code)}">無効にする</button></div>`).join('')}</div>`).join('')}
+    ${free.length ? '<button class="btn ghost" style="width:100%;margin-top:16px" data-a="addclass">＋ このクラスをコピーして別のクラスを追加</button>' : ''}`;
+}
+
+function createView(cr) { // 管理: 大会の作成／クラスの追加（コピー元の内容を入れて確認してから追加）
+  const e = cr.addTo ? ev(cr.addTo) : null, src = cr.src ? room(cr.src) : null, dis = e ? 'disabled' : '', free = e ? CLASSES.filter(c => !roomsOf(e.id).some(r => r.cls === c)) : CLASSES;
+  return `${back('cancelcreate')}<h1>${e ? 'クラスを追加' : '大会を作る'}</h1>
+    <form class="card" id="roomForm" style="margin-top:10px" novalidate>
+      ${e ? '<p class="sub">選んだクラスの内容をコピーしてあります。クラス・課目・定員・参加費・種類は変えられます。大会名・開催日・場所・公開範囲は大会共通です。</p>' : ''}
+      <label>大会名<input id="title" maxlength="40" placeholder="例：冬のファンマッチ" value="${e ? esc(e.title) : ''}" ${dis}></label>
+      <div class="grid2"><label>開催日<input id="date" type="date" value="${e ? esc(e.date) : ''}" ${dis}></label>
+        <label>集合時間<input id="meet" type="time" value="${e ? esc(e.meet || '') : '09:00'}" ${dis}></label></div>
+      ${placeFields(e, dis)}${photoField(e, dis)}
+      <label>クラス<select id="cls">${free.map(c => `<option>${c}</option>`).join('')}</select></label>
+      <div id="elWrap">${elEditor(src ? src.elements : ['コンテナ'])}</div>
+      <div class="grid2"><label>定員（組）<input id="cap" type="number" inputmode="numeric" min="1" max="50" value="${src ? src.cap : 16}"></label>
+        <label>参加費（円）<input id="feeIn" type="number" inputmode="numeric" min="0" max="50000" step="500" value="${src ? src.fee : 7000}"></label></div>
+      <label>種類<select id="official"><option value="0">非公式（ファンマッチ・練習会）</option><option value="1" ${src && src.official ? 'selected' : ''}>公式（ルール準拠・開催申請が必要）</option></select></label>
+      <label class="agree"><input type="checkbox" id="priv" ${e && e.priv ? 'checked' : ''} ${dis}> プライベートルームにする（大会検索に出さず、リンクを知っている人だけ）</label>
+      <p class="sub" id="feeNote"></p><p id="roomErr" class="bad" hidden></p>
+      <button class="btn">${e ? 'このクラスを追加する' : '大会を作る'}</button>${e ? '' : '<p class="sub">ホストごとに最初の1大会は手数料0円です。</p>'}</form>`;
+}
+// 参加者のダミー情報（IDから決まる架空の値）
+function meta(en) {
+  let h = 0; for (const c of en.id) h = (h * 31 + c.charCodeAt(0)) % 997;
+  return { age: 2 + h % 8, count: 1 + h % 9, chip: `ダミー-${String(h).padStart(4, '0')}`, member: `M-${String(h * 7 % 10000).padStart(4, '0')}（ダミー）`, mail: `handler${h}@example.test` };
+}
+
+/* ===== 6. 操作（act）と入力の検証 ===== */
+const NAV = [['search', '探す', 'search'], ['events', 'イベント', 'ticket'], ['dog', '成績', 'paw'], ['account', 'アカウント', 'user']];
+const HOST_VIEWS = ['rooms', 'edit', 'order', 'record', 'hresults']; // 主催イベントの管理（ホスト登録後のみ）
+const TAB_OF = { search: 'search', event: 'search', myevents: 'events', detail: 'events', edit: 'events', rooms: 'events', order: 'events', record: 'events', hresults: 'events', dog: 'dog', account: 'account', hostreg: 'account' };
+const TAB_VIEW = { search: 'search', events: 'myevents', dog: 'dog', account: 'account' };
+let enterNext = true; // 探すを開いた直後だけ、カードを順番に表示する
+
+const act = {
+  // 移動
+  go: v => { S.view = v; if (TAB_OF[v]) S.tab = TAB_OF[v]; if (v === 'hostreg') S.reg = { step: 0 }; if (v === 'search') enterNext = true; },
+  tab: t => { S.tab = t; S.view = TAB_VIEW[t]; if (t === 'search') enterNext = true; },
+  evtab: v => S.evTab = v,
+  acctab: v => S.accTab = v,
+  dtab: v => S.dtab = v,
+  el: v => { S.element = v; S.editing = null; },
+  dog: v => S.dog = v,
+  open: (v, d) => { if (d) S.roomId = d; if (!S.seen.includes(v)) S.seen.push(v); S.eventId = v; S.flow = null; S.tab = 'search'; S.view = 'event'; },
+  host: v => { S.profileOf = v; S.profileBack = S.view; S.view = 'profile'; },
+  mydetail: v => { S.detailEntry = v; S.dtab = 'info'; S.view = 'detail'; },
+  entrants: v => { S.entrantRoom = v; S.entrantFrom = S.view; S.view = 'entrants'; },
+  eprofile: v => { S.entryProfile = v; S.eprofileBack = S.view; S.view = 'eprofile'; },
+  // 申込
+  apply: v => {
+    const r = room(v), mine = entriesOf(v).filter(e => e.handler === ME.handler), multi = !r.official && !isLesson(r); // 多頭飼いは、非公式の競技会なら同じクラスに複数頭で出られる
+    if (mine.length && !multi) return toast('申込済みです', `${r.cls}にはすでに申し込んでいます${r.official ? '（公式競技会は1つの競技に1人1頭です）' : ''}`);
+    const free = ME.dogs.filter(d => !mine.some(e => e.dog === d[0]));
+    if (!free.length) return toast('申込済みです', 'すべての犬が、このクラスに申し込み済みです');
+    S.flow = { roomId: v, step: 0, dog: free[0][0] };
+  },
+  cancel: () => S.flow = null,
+  agree: () => {
+    if (!$('agree').checked) { $('err').textContent = '同意のチェックを入れてください'; $('err').hidden = false; return false; }
+    const d = $('fdog')?.value; if (d && ME.dogs.some(x => x[0] === d) && !entriesOf(S.flow.roomId).some(x => x.handler === ME.handler && x.dog === d)) S.flow.dog = d;
+    S.flow.heat = !!$('heat')?.checked; S.flow.step = 1;
+  },
+  pay: () => {
+    const rid = S.flow.roomId, r = room(rid), id = 'me' + Date.now(), sem = r.cls === 'セミナー';
+    S.entries.push({ id, roomId: rid, handler: ME.handler, dog: sem ? '' : S.flow.dog, breed: sem ? '' : breedOf(S.flow.dog), heat: !!S.flow.heat });
+    S.flow.step = 2;
+    const hostAcc = Object.values(ACC).find(a => a.hid === ev(r.eventId).hostId);
+    if (hostAcc) push(hostAcc.handler, '新しい申込があります', `${ME.handler}さんが ${ev(r.eventId).title}・${r.cls} に申し込みました`); // ホストへ
+    if (isLesson(r)) return push(ME.handler, 'お申し込みが完了しました', `${ev(r.eventId).title}・${ev(r.eventId).date}`, id);
+    const ord = S.order[rid], h = ord.findIndex(x => entry(x).heat);
+    if (S.flow.heat || h < 0) ord.push(id); else ord.splice(h, 0, id); // ヒート中でなければヒート犬の前へ
+    push(ME.handler, '参加が完了しました', `${ev(r.eventId).title}・${r.cls}。出走順は主催者が確定すると見られます`, id);
+  },
+  // ホスト登録・主催イベントの管理
+  startcreate: () => {
+    if (S.isHost) { S.tab = 'events'; S.view = 'rooms'; S.creating = {}; }
+    else { S.tab = 'account'; S.view = 'hostreg'; S.reg = { step: 0, after: true }; } // 登録後にそのまま作成画面へ
+  },
+  regback: () => { if (S.reg && S.reg.step > 0) S.reg.step--; else { S.reg = null; S.view = 'account'; } },
+  unhost: () => { S.isHost = false; S.creating = S.staff = null; },
+  manage: v => { const r = room(v); S.hostEventId = r.eventId; S.roomId = v; S.creating = null; S.evTab = 'host'; S.tab = 'events'; S.view = 'rooms'; },
+  addclass: () => { const r = room(curRoom(hostEv())); S.creating = { addTo: r.eventId, src: r.id }; },
+  cancelcreate: () => { const add = S.creating?.addTo; S.creating = null; if (!add) { S.tab = 'events'; S.evTab = 'host'; S.view = 'myevents'; } },
+  shuffle: () => {
+    const ord = S.order[S.roomId], a = ord.filter(id => !entry(id).heat);
+    for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+    S.order[S.roomId] = a.concat(ord.filter(id => entry(id).heat));
+  },
+  fixorder: () => {
+    const r = room(S.roomId), ord = S.order[r.id], fh = ord.findIndex(id => entry(id).heat);
+    if (!ord.length) return toast('確定できません', '参加者がいません');
+    if (fh >= 0 && !ord.slice(fh).every(id => entry(id).heat)) return toast('確定できません', 'ヒート中の犬を最後にしてください');
+    if (r.official && dupHandlers(r.id).length) return toast('確定できません', '1人で2頭以上エントリーしています');
+    r.orderFixed = true; toast('出走順を確定しました', '参加者に公開されました');
+    tellRoom(r, '出走順が確定しました', `${ev(r.eventId).title}・${r.cls}の出走順を見られます`);
+  },
+  unfixorder: () => { room(S.roomId).orderFixed = false; },
+  fixresults: () => { const r = room(S.roomId); r.resultsFixed = true; toast('結果を確定しました', '参加者に公開されました'); tellRoom(r, '結果が確定しました', `${ev(r.eventId).title}・${r.cls}の結果を見られます`); },
+  unfixresults: () => { room(S.roomId).resultsFixed = false; },
+  edit: v => S.editing = v,
+  call: () => {
+    const rid = S.roomId, el = curEl(room(rid)), ord = S.order[rid], cur = S.editing && ord.includes(S.editing) ? S.editing : ord[nextIndex(rid, el)];
+    if (!cur || !callState(rid, el, cur).can) return false;
+    const en = entry(cur);
+    S.called[rid + ':' + el + ':' + cur] = true; delete S.callOk[rid + ':' + el];
+    push(en.handler, '呼び出し', `${en.dog}の番です。スタート地点へお越しください`, en.id);
+    toast('呼び出しました', `${en.dog}（${en.handler}）`);
+  },
+  newlink: v => { (room(S.roomId).links ??= []).push({ role: v, code: Math.random().toString(36).slice(2, 8) }); },
+  rmlink: v => { const r = room(S.roomId); r.links = (r.links || []).filter(x => x.code !== v); },
+  staffopen: () => { S.staff = true; S.view = 'record'; },
+  staffexit: () => { S.staff = false; S.view = 'edit'; },
+  bell: () => { // 通知ページを開く。新着は目立たせ、開いたら既読にする
+    S.newIds = S.inbox.filter(n => n.to === ME.handler && !n.read).map(n => n.id);
+    S.inbox.forEach(n => { if (n.to === ME.handler) n.read = true; });
+    if (S.view !== 'notices') S.noticeBack = S.view; S.view = 'notices';
+  },
+  // 試作用
+  switch: k => { // アカウントを切り替える（ホスト登録の状態もアカウントごとに持つ）
+    S.hostOf[S.acct] = S.isHost; S.acct = k; S.isHost = S.hostOf[k]; S.dog = ME.dog;
+    S.flow = S.creating = S.reg = S.staff = null; S.evTab = S.accTab = 'join'; S.tab = S.view = 'account';
+    const mine = S.events.find(e => e.hostId === ME.hid); if (mine) S.hostEventId = mine.id;
+  },
+  reset: () => { S = seed(); enterNext = true; },
+};
+
+// 入力の検証と保存。エラーなら false を返す（画面は作り直さない）
+const formError = id => msg => { const el = $(id); el.textContent = msg; el.hidden = false; return false; };
+const intIn = (n, lo, hi) => Number.isInteger(n) && n >= lo && n <= hi;
+const placeOk = (pref, venue) => PLACES.includes(pref) && venue.length <= 30;
+const submit = {
+  regForm() {
+    const bad = formError('regErr'), st = S.reg.step;
+    if (st === 0) { S.reg.step = 1; return; }
+    if (st === 1) {
+      const born = $('rb').value;
+      if (!$('rn').value.trim() || !$('bn').value.trim() || !$('bb').value.trim()) return bad('氏名・銀行名・支店名を入力してください');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(born) || born >= new Date().toISOString().slice(0, 10)) return bad('生年月日を入力してください');
+      if (!/^\d{7}$/.test($('bk').value)) return bad('口座番号は7桁の数字で入力してください');
+      if (!/^[ァ-ヶー 　]+$/.test($('bm').value.trim())) return bad('名義はカタカナで入力してください');
+      S.reg.step = 2; return; // 口座・本人確認の入力値は保存しない
+    }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test($('em').value.trim())) return bad('連絡先メールを正しく入力してください');
+    if (!$('t1').checked || !$('t2').checked) return bad('2つの同意にチェックを入れてください');
+    const after = S.reg.after; S.isHost = true; S.reg = null; S.tab = 'events'; S.evTab = 'host'; S.view = after ? 'rooms' : 'myevents'; S.creating = after ? {} : null;
+    toast('ホスト登録が完了しました', 'イベントの「主催するイベント」から大会を作れます');
+  },
+  roomForm() {
+    const bad = formError('roomErr'), cr = S.creating, title = $('title').value.trim(), date = $('date').value, meet = $('meet').value, pref = $('pref').value, venue = $('venue').value.trim();
+    const cls = $('cls').value, cap = +$('cap').value, f = +$('feeIn').value, els = cls === 'セミナー' ? ['座学'] : readEls();
+    if (!title || title.length > 40) return bad('大会名を40文字以内で入力してください');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return bad('開催日を入力してください');
+    if (!/^\d{2}:\d{2}$/.test(meet)) return bad('集合時間を入力してください');
+    if (!placeOk(pref, venue)) return bad('場所を確認してください（会場は30文字まで）');
+    if (!cls) return bad('追加できるクラスがありません');
+    if (cls !== 'セミナー' && !elsOk(els)) return bad('課目を1〜12個追加してください');
+    if (!intIn(cap, 1, 50)) return bad('定員は1〜50組の整数で入力してください');
+    if (!intIn(f, 0, 50000)) return bad('参加費は0〜50,000円の整数で入力してください');
+    const official = $('official').value === '1' && !isLesson({ cls }), rid = 'r' + Date.now();
+    if (cr.addTo) {
+      const e0 = ev(cr.addTo);
+      if (roomsOf(e0.id).some(r => r.cls === cls)) return bad('そのクラスはすでにあります');
+      S.rooms.push({ id: rid, eventId: e0.id, cls, elements: els, cap, fee: f, official });
+      toast('クラスを追加しました', `${e0.title}・${cls}・${yen(f)}`);
+    } else {
+      const id = 'e' + Date.now(), type = cls === '体験' ? '体験会' : cls === 'セミナー' ? 'セミナー' : official ? '公式競技会' : '非公式・ファンマッチ';
+      S.events.push({ id, type, title, date, meet, place: placeOf(pref, venue), pref, fee: f, cap, hostId: ME.hid, official, priv: $('priv').checked, photo: photoDraft || undefined });
+      S.rooms.push({ id: rid, eventId: id, cls, elements: els, cap, fee: f, official });
+      S.hostEventId = id;
+      toast('大会を作りました', `${title}・${cls}・課目${els.length}つ・${$('priv').checked ? '限定公開' : '公開'}`);
+    }
+    S.order[rid] = []; S.roomId = rid; S.creating = null;
+  },
+  editForm() {
+    const bad = formError('editErr'), r = room(curRoom(hostEv())), e0 = ev(r.eventId), n = entriesOf(r.id).length;
+    const cap = +$('cap').value, f = +$('feeIn').value, els = r.cls === 'セミナー' ? r.elements : readEls(), pref = $('pref').value, venue = $('venue').value.trim(), meet = $('meet').value;
+    if (!placeOk(pref, venue)) return bad('場所を確認してください（会場は30文字まで）');
+    if (!/^(\d{2}:\d{2})?$/.test(meet)) return bad('集合時間を確認してください');
+    if (r.cls !== 'セミナー' && !elsOk(els)) return bad('課目を1〜12個にしてください');
+    if (!intIn(cap, 1, 50)) return bad('定員は1〜50組の整数で入力してください');
+    if (cap < n) return bad(`すでに${n}組が申し込んでいるため、定員は${n}組未満にできません`);
+    const gone = r.elements.find(x => !els.includes(x) && Object.keys(resOf(r.id, x)).length);
+    if (gone) return bad(`${gone}は記録があるため削除できません`);
+    if (!n && !intIn(f, 0, 50000)) return bad('参加費は0〜50,000円の整数で入力してください');
+    r.cap = cap; r.elements = els; if (!n) r.fee = f; // 参加者がいると参加費は変えられない
+    Object.assign(e0, { pref, place: placeOf(pref, venue), meet, priv: $('priv').checked });
+    if (photoDraft !== undefined) e0.photo = photoDraft || undefined;
+    toast('変更を保存しました', `${e0.title}・${r.cls}`); S.view = 'rooms';
+  },
+  recForm() {
+    const bad = formError('recErr'), rid = curRoom(hostEv()), el = curEl(room(rid)), ord = S.order[rid];
+    const id = S.editing && ord.includes(S.editing) ? S.editing : ord[nextIndex(rid, el)];
+    const st = document.querySelector('input[name=st]:checked').value, t = parseTime($('time').value), score = +$('score').value, faults = +$('faults').value;
+    if (st === 'ok' && t == null) return bad('タイムを数字で入力してください（例: 12345 → 1:23.45、秒は59まで）');
+    if (!intIn(score, 0, 10) || !intIn(faults, 0, 10)) return bad('得点とフォルトは0〜10の整数で入力してください');
+    (S.results[rid + ':' + el] ??= {})[id] = st === 'ok' ? { t, score, faults, st } : { t: 0, score: 0, faults: 0, st };
+    const edited = !!S.editing; S.editing = null;
+    const ni = nextIndex(rid, el);
+    if (edited) return; // 過去の記録の修正では、呼び出しも通知も出さない
+    if (ni >= 0) S.callOk[rid + ':' + el] = ord[ni]; // 「記録して次へ」で、次の犬を呼び出せるようになる
+    if (ni >= 0) entriesOf(rid).forEach(m => { // 出番の近い犬の飼い主へ通知
+      const left = ord.indexOf(m.id) - ni;
+      if (left === 3) push(m.handler, 'あと3頭で出番です', `${m.dog}の出番まであと3頭。スタート地点の近くでお待ちください`, m.id);
+      if (left === 0) push(m.handler, '次は出番です', `${m.dog}が次に走ります。準備してください`, m.id);
+    });
+  },
+};
+
+/* ===== 7. 描画・イベント処理・起動 ===== */
+let toastTimer;
+function toast(title, body) {
+  const t = $('toast');
+  t.innerHTML = `<b>${esc(title)}</b>${esc(body)}`;
+  t.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.hidden = true, 5000);
+}
+// 通知は相手の受信箱に届く。自分宛てならその場でも表示する。entryId を付けると、通知から参加の詳細へ移れる
+function push(to, title, body, entryId) {
+  S.inbox.unshift({ id: ++S.nid, to, title, body, entryId, at: new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' }), read: false });
+  if (to === ME.handler) toast(title, body);
+}
+const unread = () => S.inbox.filter(n => n.to === ME.handler && !n.read).length;
+const tellRoom = (r, title, body) => entriesOf(r.id).forEach(en => push(en.handler, title, body, en.id)); // 参加者全員に通知
+function feeNote() { $('feeNote').textContent = feeText(+$('feeIn').value || 0, $('official')?.value === '1'); }
+function showCards(animate) { document.querySelectorAll('.ecard').forEach((c, i) => animate ? setTimeout(() => c.classList.add('in'), 150 + 120 * Math.min(i, 8)) : c.classList.add('in')); }
+
+function render() {
+  photoDraft = undefined;
+  if (HOST_VIEWS.includes(S.view) && !S.isHost) { S.view = 'myevents'; S.tab = 'events'; }
+  if (S.staff && S.view !== 'record') S.view = 'record'; // 記録係（試作）は記録だけ
+  $('nav').innerHTML = NAV.map(([t, l, i]) => `<button data-a="tab" data-v="${t}" ${S.tab === t ? 'aria-current="page"' : ''}>${ic(i)}<span>${l}</span></button>`).join('');
+  $('bell').innerHTML = ic('bell', 20) + (unread() ? `<span class="badge">${unread()}</span>` : '');
+  $('main').innerHTML = (V[S.view] || V.search)();
+  if ($('feeNote')) feeNote();
+  if ($('cls') && $('elWrap')) $('elWrap').hidden = $('cls').value === 'セミナー';
+  showCards(enterNext); enterNext = false;
+  save();
+}
+
+document.addEventListener('click', e => {
+  const t = e.target;
+  if (t.closest('[data-photo-clear]')) { photoDraft = null; $('photoPrev').innerHTML = photoPrev(null); }
+  const cp = t.closest('[data-copy]');
+  if (cp) navigator.clipboard?.writeText(cp.dataset.copy).then(() => toast('コピーしました', cp.dataset.copy)).catch(() => toast('コピーできませんでした', 'リンクを長押ししてコピーしてください'));
+  const rm = t.closest('[data-rm]'), add = t.closest('[data-add]');
+  if (rm) rm.remove();
+  if (add) { // 課目を追加（コンテナ→コンテナ2→…）。フォームの入力を消さないよう画面は作り直さない
+    const have = readEls();
+    let n = 1, name = add.dataset.add;
+    while (have.includes(name)) name = add.dataset.add + ++n;
+    const b = document.createElement('button');
+    Object.assign(b, { type: 'button', className: 'btn ghost sm', textContent: name + ' ×' }); b.dataset.el = name; b.dataset.rm = ''; b.setAttribute('aria-label', name + 'を削除');
+    $('elList').append(b);
+  }
+  const b = t.closest('[data-a]');
+  if (b && act[b.dataset.a](b.dataset.v, b.dataset.d) !== false) { render(); $('scroll').scrollTo(0, 0); }
+});
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'time') { const ms = parseTime(t.value); $('timePreview').textContent = ms == null ? (t.value ? '形式を確認' : '—:—.—') : fmtTime(ms); }
+  if (t.id === 'q') { S.q = t.value; $('evList').innerHTML = evList(); showCards(false); save(); }
+  if (t.id === 'feeIn' || t.id === 'official') feeNote();
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.id === 'photo') readPhoto(t.files[0]);
+  if (t.id === 'avatar') readAvatar(t.files[0]);
+  if (t.id === 'region') { S.region = t.value; render(); }
+  if (t.id === 'fcls') { S.cls = t.value; render(); }
+  if (t.id === 'ftype') { S.filter = t.value; render(); }
+  if (t.id === 'cls' && $('elWrap')) $('elWrap').hidden = t.value === 'セミナー';
+  if (t.closest('#roomForm, #editForm')) feeNote();
+});
+document.addEventListener('submit', e => {
+  e.preventDefault();
+  if (submit[e.target.id]?.() !== false) render();
+});
+
+// 出走順のドラッグ並べ替え（指でもマウスでも）。離したときに並びを確定する。上下キーでも動かせる
+let drag;
+document.addEventListener('pointerdown', e => {
+  const g = e.target.closest('[data-grip]'); if (!g) return;
+  drag = g.closest('[data-id]'); drag.classList.add('dragging'); g.setPointerCapture(e.pointerId); e.preventDefault();
+});
+document.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const t = document.elementFromPoint(e.clientX, e.clientY)?.closest('[data-id]');
+  if (t && t !== drag && t.parentNode === drag.parentNode) drag.compareDocumentPosition(t) & Node.DOCUMENT_POSITION_FOLLOWING ? t.after(drag) : t.before(drag);
+  const sc = $('scroll'), b = sc.getBoundingClientRect();
+  if (e.clientY < b.top + 130) sc.scrollBy(0, -12); else if (e.clientY > b.bottom - 110) sc.scrollBy(0, 12);
+});
+const drop = () => { if (!drag) return; S.order[S.roomId] = [...drag.parentNode.children].map(r => r.dataset.id); drag = null; render(); };
+document.addEventListener('pointerup', drop); document.addEventListener('pointercancel', drop);
+document.addEventListener('keydown', e => {
+  const g = e.target.closest?.('[data-grip]'); if (!g || !/^Arrow(Up|Down)$/.test(e.key)) return;
+  e.preventDefault();
+  const o = S.order[S.roomId], id = g.closest('[data-id]').dataset.id, i = o.indexOf(id), j = i + (e.key === 'ArrowUp' ? -1 : 1);
+  if (j < 0 || j >= o.length) return;
+  [o[i], o[j]] = [o[j], o[i]]; render(); document.querySelector(`[data-id="${CSS.escape(id)}"] [data-grip]`).focus();
+});
+
+// 起動: ロゴを描き、画面の高さに合わせてフレームを縮め（幅480px以下は全画面）、最初の画面を出す
+$('logo').innerHTML = dogFace(34);
+const fit = () => document.querySelector('.phone').style.setProperty('--s', innerWidth > 480 ? Math.min(1, (innerHeight - 30) / 810) : 1);
+addEventListener('resize', fit); fit();
+render();
+
+// 自己チェック（コンソール）
+console.assert(fmtTime(parseTime('12345')) === '1:23.45' && parseTime('9999') === null && fmtTime(parseTime('5012')) === '0:50.12', 'parseTime');
+console.assert(rank([{ r: { st: 'ok', score: 3, faults: 0, t: 1 } }, { r: { st: 'ok', score: 3, faults: 0, t: 1 } }, { r: { st: 'ok', score: 3, faults: 1, t: 0 } }, { r: { st: 'dq' } }]).map(x => x.rank).join() === '1,1,3,', 'rank');
+</script>
+
+</html>
