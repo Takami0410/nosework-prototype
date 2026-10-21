@@ -351,7 +351,7 @@ function dupHandlers(rid) { // 1競技につきハンドラー1人＝犬1頭
   entriesOf(rid).forEach(e => (dogs[e.handler] ??= new Set()).add(e.dog));
   return Object.keys(dogs).filter(h => dogs[h].size > 1);
 }
-const feeText = (f, official) => `参加者は${yen(f)}を支払い、ホストの受け取りは${yen(f - fee(f))}/組（手数料${FEE_RATE * 100}％）。` + (official ? '公式は2か月前までの開催申請と、8日以内の結果報告が必要です。' : '');
+const feeText = (f, official) => `仮の計算例：参加費${yen(f)}、ホストの受け取り${yen(f - fee(f))}/組（手数料${FEE_RATE * 100}％と仮定）。手数料率・受取額は未確定です。` + (official ? '公式は2か月前までの開催申請と、8日以内の結果報告が必要です。' : '');
 
 /* ===== 4. 画面の部品 ===== */
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -464,7 +464,7 @@ function profileBody(p, own, hid) {
   if (tab === 'join') body = `${stat('これまでのイベント参加', p.joined.length, '回', 28)}<h2>過去に参加したイベント</h2>${p.joined.length ? '' : '<p class="sub">まだ参加履歴はありません。</p>'}
     <div class="list">${p.joined.map(([d, t, dogs]) => `<div class="row"><span class="num sub">${esc(d)}</span><span class="grow">${esc(t)}<br><span class="sub">${dogs.map(esc).join('・')}</span></span></div>`).join('')}</div>`;
   else if (!h) body = own ? `<div class="card"><strong>ホストになると</strong>
-      <ul class="sub"><li>大会・練習会・セミナーを作り、リンクで募集できます</li><li>参加費を集金し、手数料5％を引いて振り込みます</li><li>出走順・記録・結果をアプリで公開できます</li><li>開催実績とレビューがプロフィールにたまります</li></ul>
+      <ul class="sub"><li>大会・練習会・セミナーを作り、リンクで募集できます</li><li>参加費の集金と振り込みを想定しています（手数料は未確定）</li><li>出走順・記録・結果をアプリで公開できます</li><li>開催実績とレビューがプロフィールにたまります</li></ul>
       <div class="sub">登録に必要なもの: 活動エリア／本人確認（氏名・生年月日）／振込先口座／連絡先とキャンセル規定／規約への同意</div>
       <button class="btn" data-a="go" data-v="hostreg">ホスト登録をはじめる</button></div>` : '';
   else {
@@ -544,10 +544,10 @@ const V = {
       <p id="err" class="bad" hidden></p><button class="btn" data-a="agree">同意して支払いへ</button>`);
     if (f.step === 1) return head + card(`<strong>お支払い（ダミー）</strong>
       <table class="money"><tr><td>参加費 ${yen(r.fee)}${sem ? '' : ` × ${n}頭`}</td><td class="num">${yen(total)}</td></tr>
-        <tr><td class="sub">うちアプリ手数料（決済込み${FEE_RATE * 100}％）</td><td class="num sub">${yen(fee(total))}</td></tr>
-        <tr><td class="sub">主催者の受け取り</td><td class="num sub">${yen(total - fee(total))}</td></tr>
+        <tr><td class="sub">うち手数料（仮：${FEE_RATE * 100}％）</td><td class="num sub">${yen(fee(total))}</td></tr>
+        <tr><td class="sub">主催者の受け取り（仮）</td><td class="num sub">${yen(total - fee(total))}</td></tr>
         <tr class="total"><td>お支払い合計</td><td class="num">${yen(total)}</td></tr></table>
-      <p class="sub">手数料は参加費の内側から引かれ、参加者の負担は増えません。試作のためカード入力はなく、実際の請求もありません。</p>
+      <p class="sub">手数料率・受取額は画面確認用の仮の計算例で、実際の料金条件は未確定です。試作のためカード入力はなく、実際の請求もありません。</p>
       <button class="btn" data-a="pay">${yen(total)}を支払う（ダミー）</button>`);
     return head + card(`<div class="row"><span>${dogFace(40)}</span><strong class="ok grow">${L ? 'お申し込みが完了しました！' : '参加が完了しました！'}${sem ? '' : `（${n}頭）`}</strong></div>
       ${L ? `<div class="sub num">${esc(e.date)}・${esc(e.place)}</div><p class="sub">持ち物や集合時間などのお知らせは、主催者からアプリに届きます。</p>`
@@ -656,7 +656,7 @@ const V = {
       <label>連絡先メール<input id="em" type="email" maxlength="60" placeholder="info@example.test"></label>
       <label>キャンセル・返金規定<select id="cp"><option>参加日の7日前まで全額返金、以降は返金なし</option><option>3日前まで50％返金、以降は返金なし</option><option>返金なし（主催者の都合による中止を除く）</option></select></label>
       <label class="agree"><input type="checkbox" id="t1"> 利用規約に同意します</label>
-      <label class="agree"><input type="checkbox" id="t2"> 参加費から手数料5％（決済込み）が引かれることに同意します（最初の1大会は0％）</label>`);
+      <label class="agree"><input type="checkbox" id="t2"> 手数料は仮の表示で、実際の料金条件は未確定であることを確認しました</label>`);
   },
 
   // --- 通知（ヘッダーのベル） ---
@@ -734,7 +734,7 @@ function detailTab() { // 管理: 詳細（情報＋参加者一覧の表）
   return `${manageHead('rooms', e, r)}
     <div class="row" style="margin-top:4px"><span class="chip ${e.priv ? '' : 'off'}">${e.priv ? 'プライベート' : '公開'}</span>${L ? '' : `<span class="chip ${r.orderFixed ? 'off' : ''}">出走順 ${r.orderFixed ? '確定済み' : '未確定'}</span><span class="chip ${r.resultsFixed ? 'off' : ''}">結果 ${r.resultsFixed ? '確定済み' : '未確定'}</span>`}</div>
     <div class="card" style="margin-top:10px">${kv('日付', `<span class="num">${esc(e.date)}</span>`)}${kv('集合時間', `<span class="num">${esc(e.meet || '未定')}</span>`)}${kv('場所', esc(e.place))}
-      ${elLine(r) ? kv('課目', esc(elStr(r))) : ''}${kv('定員', `<span class="num">${ord.length}/${r.cap}</span>組`)}${kv('参加費', `${yen(r.fee)}（手取り${yen(r.fee - fee(r.fee))}/組）`)}</div>
+      ${elLine(r) ? kv('課目', esc(elStr(r))) : ''}${kv('定員', `<span class="num">${ord.length}/${r.cap}</span>組`)}${kv('参加費', `${yen(r.fee)}（仮の手取り${yen(r.fee - fee(r.fee))}/組）`)}</div>
     <h2>参加者一覧（${ord.length}組）</h2>
     ${ord.length ? `<div style="overflow-x:auto"><table><tr><th>順</th><th>犬</th><th>ハンドラー</th><th></th></tr>${ord.map((id, i) => { const en = entry(id);
       return `<tr data-a="eprofile" data-v="${esc(id)}"><td class="num">${i + 1}</td><td>${esc(en.dog || '—')}${en.breed ? `<br><span class="sub">${esc(en.breed)}</span>` : ''}</td><td>${esc(en.handler)}</td><td>${en.heat ? '<span class="chip heat">ヒート</span>' : ''}</td></tr>`; }).join('')}</table></div>` : '<p class="sub">まだ参加者がいません。</p>'}`;
@@ -779,7 +779,7 @@ function createView(cr) { // 管理: 大会の作成／クラスの追加（コ�
       <label>種類<select id="official"><option value="0">非公式（ファンマッチ・練習会）</option><option value="1" ${src && src.official ? 'selected' : ''}>公式（ルール準拠・開催申請が必要）</option></select></label>
       <label class="agree"><input type="checkbox" id="priv" ${e && e.priv ? 'checked' : ''} ${dis}> プライベートルームにする（大会検索に出さず、リンクを知っている人だけ）</label>
       <p class="sub" id="feeNote"></p><p id="roomErr" class="bad" hidden></p>
-      <button class="btn">${e ? 'このクラスを追加する' : '大会を作る'}</button>${e ? '' : '<p class="sub">ホストごとに最初の1大会は手数料0円です。</p>'}</form>`;
+      <button class="btn">${e ? 'このクラスを追加する' : '大会を作る'}</button>${e ? '' : '<p class="sub">手数料・初回特典などの料金条件は未確定です。</p>'}</form>`;
 }
 // 参加者のダミー情報（IDから決まる架空の値）
 function meta(en) {
